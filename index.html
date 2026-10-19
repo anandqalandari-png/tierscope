@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tierscope – Find the revenue your pricing leaves on the table</title>
+<meta name="description" content="Tierscope is an AI agent that compares your SaaS pricing with your 20 closest competitors and tells you what to change.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF;
+  --canvas:#F1F3F0;
+  --ink:#121614;
+  --muted:#575E5A;
+  --hair:#D9DDD8;
+  --green:#0B6E4F;
+  --green-dark:#08513A;
+  --mint:#D8EFE4;
+  --amber:#8F4405;
+  --amber-tint:#FCEDD0;
+  --red:#B42318;
+  --mono:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body.locked{overflow:hidden}
+img{display:block;max-width:100%}
+h1,h2,h3,p{margin:0}
+h1{font-size:clamp(44px,7.2vw,104px);line-height:.94;font-weight:800;letter-spacing:-.05em}
+h2{font-size:clamp(32px,4.4vw,60px);line-height:1;font-weight:800;letter-spacing:-.04em}
+h3{font-size:20px;line-height:1.3;font-weight:600;letter-spacing:-.015em}
+.lead{font-size:clamp(17px,1.5vw,20px);color:var(--muted);line-height:1.55}
+.muted{color:var(--muted)}
+a{color:var(--green)}
+:focus-visible{outline:3px solid #2E9C74;outline-offset:2px}
+.container{max-width:1240px;margin:0 auto;padding-inline:28px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[hidden]{display:none!important}
+
+/* ---------- controls: square, inked ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 24px;border:2px solid var(--ink);border-radius:0;font:600 16px/1 'Geist',system-ui,sans-serif;text-decoration:none;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s}
+.btn-primary{background:var(--green);border-color:var(--green);color:#fff}
+.btn-primary:hover{background:var(--green-dark);border-color:var(--green-dark)}
+.btn-ink{background:var(--ink);color:#fff}
+.btn-ink:hover{background:#000}
+.btn-ghost{background:transparent;color:var(--ink)}
+.btn-ghost:hover{background:var(--ink);color:#fff}
+.btn:active{transform:translateY(1px)}
+.input{min-height:52px;flex:1;min-width:0;padding:0 16px;border:2px solid var(--ink);border-radius:0;font:500 17px 'Geist',system-ui,sans-serif;color:var(--ink);background:#fff}
+.input:focus{outline:none;box-shadow:4px 4px 0 var(--green)}
+.form-row{display:flex}
+.form-row .btn{margin-left:-2px}
+.hint{font-size:14px;color:var(--muted);margin-top:12px}
+.err{font-size:14px;color:var(--red);margin-top:10px;font-weight:500}
+.linkbtn{background:none;border:0;padding:0;color:var(--green);font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.linkbtn:disabled{color:var(--muted);text-decoration:none;cursor:default}
+
+/* ---------- nav ---------- */
+.nav{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:2px solid var(--ink)}
+.nav .container{display:flex;align-items:center;justify-content:space-between;gap:24px;height:68px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;font-weight:800;font-size:21px;letter-spacing:-.03em}
+.nav-links{display:flex;align-items:center;gap:30px}
+.nav-links a:not(.btn),.nav-links .navlink{color:var(--ink);text-decoration:none;font-size:15px;font-weight:500;background:none;border:0;padding:0;cursor:pointer;font-family:inherit}
+.nav-links a:not(.btn):hover,.nav-links .navlink:hover{text-decoration:underline;text-underline-offset:4px}
+.nav-links .btn{min-height:42px;padding:0 18px;font-size:15px}
+
+/* ---------- hero ---------- */
+.hero{padding-block:64px 0;overflow:hidden}
+.hero-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:48px;align-items:start}
+.hero-copy{display:flex;flex-direction:column;gap:28px;padding-bottom:72px}
+.hero-copy .lead{max-width:44ch}
+.capture{max-width:540px}
+.facts{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:14px;color:var(--muted);list-style:none;padding:0;margin:0}
+.facts li::before{content:"✓";color:var(--green);font-weight:700;margin-right:7px}
+
+.log{background:var(--ink);color:#D6E4DD;font:400 14px/1.7 var(--mono);padding:18px 20px;min-height:208px}
+.log p{animation:fadeIn .2s ease}
+.log .ok{color:#7FD8AE}
+.log .dim{color:#8C9A93}
+.cursor{display:inline-block;width:8px;height:16px;background:#7FD8AE;vertical-align:-3px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.panel{animation:panelIn .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes panelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.step-tag{display:inline-block;font:500 13px var(--mono);color:var(--green);margin-bottom:10px}
+.panel h3{margin-bottom:6px}
+.gets{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:6px;font-size:15px;color:var(--muted)}
+.gets li::before{content:"✓";color:var(--green);font-weight:700;margin-right:8px}
+
+.otp{display:flex;gap:8px;margin-top:6px}
+.otp input{width:52px;height:60px;border:2px solid var(--ink);border-radius:0;text-align:center;font:600 24px var(--mono);color:var(--ink);background:#fff}
+.otp input:focus{outline:none;box-shadow:4px 4px 0 var(--green)}
+.otp.bad input{border-color:var(--red);animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.verified{display:flex;align-items:center;gap:12px;font-weight:600;font-size:19px}
+.verified .tick{width:34px;height:34px;background:var(--green);display:grid;place-items:center;flex:none}
+
+/* fake inbox notification */
+.toast{position:fixed;top:84px;right:20px;z-index:60;width:min(370px,calc(100vw - 40px));background:#fff;border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:14px 16px;display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:start;animation:toastIn .4s cubic-bezier(.2,1.3,.4,1)}
+.toast .av{width:36px;height:36px;background:var(--green);display:grid;place-items:center}
+.toast small{display:block;color:var(--muted);font-size:12px}
+.toast b{font-size:14px;display:block}
+.toast p{font-size:14px;margin-top:2px}
+.toast code{font:600 15px var(--mono);background:var(--mint);padding:1px 6px;letter-spacing:.12em}
+.toast .x{background:none;border:0;font-size:22px;line-height:1;cursor:pointer;padding:4px 6px;color:var(--muted)}
+@keyframes toastIn{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+
+/* ---------- the receipt ---------- */
+.printer{scroll-margin-top:84px;position:relative;justify-self:center;width:min(380px,100%);padding-top:30px}
+.slot{height:18px;background:var(--ink);margin:0 -14px;position:relative;z-index:2}
+.slot::after{content:"";position:absolute;left:14px;right:14px;bottom:4px;height:3px;background:#3A423E}
+.slot-label{position:absolute;right:0;top:-26px;font:500 12px var(--mono);color:var(--muted)}
+.receipt{position:relative;z-index:1;margin-top:-6px;background:#fff;padding:26px 24px 34px;font:400 13.5px/1.55 var(--mono);color:var(--ink);
+  filter:drop-shadow(0 10px 18px rgba(18,22,20,.12)) drop-shadow(0 1px 1px rgba(18,22,20,.14));transform-origin:top center;transform:rotate(-1.2deg)}
+.receipt-paper{
+  -webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - 10px) no-repeat,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/16px 10px repeat-x;
+          mask:linear-gradient(#000 0 0) top/100% calc(100% - 10px) no-repeat,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/16px 10px repeat-x}
+.receipt.printing{animation:print 1.9s steps(26,end) both}
+@keyframes print{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}
+.r-center{text-align:center}
+.r-brand{font:800 19px 'Geist',system-ui,sans-serif;letter-spacing:-.02em}
+.r-row{display:flex;justify-content:space-between;gap:12px}
+.r-row span:last-child{text-align:right;white-space:nowrap}
+.r-rule{border:0;border-top:1.5px dashed var(--ink);margin:12px 0}
+.r-big{display:flex;justify-content:space-between;align-items:baseline;font-weight:600}
+.r-big strong{font:800 36px/1 'Geist',system-ui,sans-serif;letter-spacing:-.03em}
+.r-find{display:grid;grid-template-columns:18px 1fr;gap:4px 6px;margin-top:6px}
+.blurred{filter:blur(5px);user-select:none;transition:filter .8s ease}
+.unlocked .blurred{filter:none}
+.lock-note{font-size:12px;color:var(--muted);text-align:center;margin-top:10px}
+.barcode{height:44px;margin-top:14px;display:block}
+.stamp{position:absolute;right:16px;top:150px;border:3px solid var(--green);color:var(--green);font:800 16px/1 'Geist',system-ui,sans-serif;padding:8px 10px;transform:rotate(-12deg);opacity:0;letter-spacing:.06em;background:rgba(255,255,255,.85)}
+.unlocked .stamp{animation:stamp .4s cubic-bezier(.2,1.6,.4,1) .3s forwards}
+@keyframes stamp{from{opacity:0;transform:rotate(-12deg) scale(2.2)}to{opacity:.95;transform:rotate(-12deg) scale(1)}}
+
+/* ---------- ticker ---------- */
+.ticker{background:var(--ink);color:#fff;overflow:hidden;white-space:nowrap}
+.ticker-wrap{display:flex;align-items:stretch}
+.ticker-label{flex:none;background:var(--green);padding:14px 18px;font:600 14px 'Geist',system-ui,sans-serif;position:relative;z-index:1}
+.ticker-track{overflow:hidden;flex:1;display:flex;align-items:center}
+.ticker-inner{display:inline-flex;gap:48px;padding:0 24px;animation:marquee 70s linear infinite;font:400 14px var(--mono)}
+.ticker:hover .ticker-inner{animation-play-state:paused}
+.ticker-inner b{font-weight:600}
+.up{color:#FFB37A}.down{color:#7FD8AE}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ---------- sections ---------- */
+.section{padding-block:120px}
+.section-canvas{background:var(--canvas)}
+.kicker{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:48px;align-items:end;margin-bottom:64px;padding-bottom:28px;border-bottom:2px solid var(--ink)}
+.kicker .lead{max-width:48ch}
+
+.problem{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:56px;align-items:start}
+.photo{background:#D3D8D4;overflow:hidden}
+.photo img{width:100%;height:100%;object-fit:cover}
+.problem .photo{aspect-ratio:4/3}
+figcaption{font:400 13px var(--mono);color:var(--muted);margin-top:10px}
+.pains{list-style:none;padding:0;margin:32px 0 0}
+.pains li{display:grid;grid-template-columns:48px 1fr;gap:6px;padding:20px 0;border-top:1px solid var(--hair)}
+.pains li:last-child{border-bottom:1px solid var(--hair)}
+.pains .big{font:800 30px/1 'Geist',system-ui,sans-serif;letter-spacing:-.03em;color:var(--amber)}
+.pains b{display:block;font-weight:600}
+.pains span{color:var(--muted);font-size:16px}
+
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.step{padding:0 24px;border-left:2px solid var(--ink);display:flex;flex-direction:column;gap:12px}
+.step:first-child{padding-left:0;border-left:0}
+.step .n{font:800 72px/.8 'Geist',system-ui,sans-serif;letter-spacing:-.05em;color:var(--green)}
+.step p{color:var(--muted);font-size:16px}
+.mini{margin-top:auto;padding-top:14px;border-top:1.5px dashed var(--ink);font:400 13px/1.7 var(--mono)}
+.mini .em{color:var(--green);font-weight:600}
+.mini .warn{color:var(--amber);font-weight:600}
+
+.tabs-layout{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:56px;align-items:start}
+.tablist{display:flex;flex-direction:column;margin-top:36px;border-top:2px solid var(--ink)}
+.tab{text-align:left;background:none;border:0;border-bottom:1px solid var(--hair);padding:18px 0;cursor:pointer;font:inherit;color:var(--ink);display:grid;grid-template-columns:28px 1fr;gap:4px 10px;transition:padding .2s}
+.tab i{font-style:normal;font:500 14px var(--mono);color:var(--muted);padding-top:3px}
+.tab b{font-weight:600;font-size:18px}
+.tab span{grid-column:2;color:var(--muted);font-size:15px}
+.tab[aria-selected="true"]{padding-left:14px;box-shadow:inset 4px 0 0 var(--green)}
+.tab[aria-selected="true"] b,.tab[aria-selected="true"] i{color:var(--green)}
+.sheet{background:#fff;border:2px solid var(--ink);box-shadow:10px 10px 0 var(--green)}
+.sheet-bar{display:flex;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:2px solid var(--ink);font:500 13px var(--mono)}
+.sheet-body{padding:24px}
+.sheet-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px}
+.sheet-head h3{font-size:17px}
+.sheet-head span{font-size:13px;color:var(--muted)}
+.tag{display:inline-block;font:600 12px var(--mono);padding:3px 8px;white-space:nowrap}
+.tag-amber{background:var(--amber-tint);color:var(--amber)}
+.tag-green{background:var(--mint);color:var(--green-dark)}
+.pos-row{display:grid;grid-template-columns:90px 1fr 132px;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--hair);font-size:14px}
+.pos-row .tag{justify-self:end}
+.pos-track{position:relative;height:26px}
+.pos-track .line{position:absolute;left:0;right:0;top:12px;height:2px;background:#E1E4E0}
+.pos-track .iqr{position:absolute;top:7px;height:12px;background:#D2D7D2}
+.pos-track .c{position:absolute;top:9px;width:8px;height:8px;margin-left:-4px;border-radius:50%;background:#7E8782}
+.pos-track .y{position:absolute;top:3px;width:12px;height:20px;margin-left:-6px;background:var(--green);border:2px solid var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:18px;font-size:13px;color:var(--muted);margin-top:14px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.gtable{width:100%;border-collapse:collapse;font-size:14px}
+.gtable th,.gtable td{padding:11px 10px;border-bottom:1px solid var(--hair);text-align:left}
+.gtable th{font:500 12px var(--mono);color:var(--muted);border-bottom:2px solid var(--ink)}
+.gtable .you{background:var(--mint);font-weight:600}
+.gtable tr.flag td{background:var(--amber-tint)}
+.gtable tr.flag .you{background:#F8DFAE}
+.gtable .r{text-align:right}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:2px solid var(--ink)}
+.metrics > div{padding:16px;border-left:2px solid var(--ink)}
+.metrics > div:first-child{border-left:0}
+.metrics small{display:block;color:var(--muted);font-size:13px}
+.metrics strong{display:block;font:800 30px/1.1 'Geist',system-ui,sans-serif;letter-spacing:-.03em;margin:6px 0 8px}
+.metrics .tag{white-space:normal}
+.note{margin-top:16px;padding:14px 16px;background:var(--amber-tint);font-size:14px;line-height:1.5}
+.note b{display:block;color:#5C2D04}
+.note p{color:#6B3A0C}
+
+.people{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px}
+.person .photo{aspect-ratio:4/5}
+.person h3{margin-top:18px;font-size:15px;font-family:var(--mono);font-weight:500;color:var(--green);letter-spacing:0}
+.person q{display:block;font-size:24px;line-height:1.2;font-weight:700;letter-spacing:-.025em;margin-top:6px;quotes:"“" "”"}
+.person p{color:var(--muted);font-size:15px;margin-top:10px}
+
+.offer{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:2px solid var(--ink)}
+.plan{padding:40px;display:flex;flex-direction:column;gap:20px}
+.plan + .plan{border-left:2px solid var(--ink);background:var(--green);color:#fff}
+.plan .price{font:800 56px/1 'Geist',system-ui,sans-serif;letter-spacing:-.04em}
+.plan .price small{font-size:16px;font-weight:500;letter-spacing:0;margin-left:6px}
+.plan ul{list-style:none;padding:0;margin:0;display:grid;gap:12px;font-size:16px}
+.plan li{padding-left:26px;position:relative}
+.plan li::before{content:"✓";position:absolute;left:0;font-weight:700;color:var(--green)}
+.plan + .plan li::before{color:#9FE0C4}
+.plan .btn{margin-top:auto;align-self:flex-start}
+.plan + .plan .btn{background:#fff;color:var(--ink);border-color:#fff}
+.plan + .plan .btn:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+.faq{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:56px}
+details{border-bottom:1px solid var(--hair)}
+details:first-child{border-top:2px solid var(--ink)}
+summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:22px 0;font-weight:600;font-size:18px}
+summary::-webkit-details-marker{display:none}
+summary .pm{font:400 26px/1 var(--mono);transition:transform .2s}
+details[open] summary .pm{transform:rotate(45deg)}
+details p{padding:0 0 24px;color:var(--muted);max-width:62ch}
+
+.final{background:var(--green);color:#fff;padding-block:96px}
+.final .container{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:48px;align-items:end}
+.final h2{font-size:clamp(40px,6vw,88px)}
+.final p{color:#CBE8DB;margin-top:18px;font-size:19px}
+.final .input{border-color:#fff}
+.final .btn{background:var(--ink);border-color:var(--ink);color:#fff}
+
+footer{padding-block:40px;font-size:14px;color:var(--muted)}
+footer .container{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px}
+footer a{color:var(--muted)}
+
+/* ---------- full report view ---------- */
+.rv{position:fixed;inset:0;z-index:50;background:var(--canvas);overflow-y:auto;animation:fadeIn .25s ease}
+.rv-bar{position:sticky;top:0;z-index:2;background:#fff;border-bottom:2px solid var(--ink)}
+.rv-bar .container{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;flex-wrap:wrap;padding-block:8px}
+.rv-bar .acts{display:flex;gap:10px;flex-wrap:wrap}
+.rv-bar .btn{min-height:42px;padding:0 16px;font-size:15px}
+.doc{max-width:1000px;margin:40px auto 80px;background:#fff;border:2px solid var(--ink)}
+.doc-cover{padding:48px 48px 40px;border-bottom:2px solid var(--ink);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:end}
+.doc-cover .meta{font:400 13px/1.8 var(--mono);color:var(--muted)}
+.doc-cover h1{font-size:clamp(38px,5.4vw,68px);margin:10px 0 10px}
+.gauge{position:relative;width:180px;text-align:center}
+.gauge .gval{position:absolute;left:0;right:0;top:46px}
+.gauge .gval b{display:block;font:800 52px/1 'Geist',system-ui,sans-serif;letter-spacing:-.04em}
+.gauge .gval small{display:block;font-size:13px;color:var(--muted)}
+.gauge .tag{margin-top:12px;white-space:normal}
+.doc-sec{padding:40px 48px;border-bottom:1px solid var(--hair)}
+.doc-sec > h2{font-size:30px;letter-spacing:-.03em;margin-bottom:6px}
+.doc-sec > .sub{color:var(--muted);font-size:15px;margin-bottom:24px}
+.gapband{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:2px solid var(--ink)}
+.gapband > div{padding:20px;border-left:2px solid var(--ink)}
+.gapband > div:first-child{border-left:0;background:var(--ink);color:#fff}
+.gapband > div:first-child small{color:#B9C4BE}
+.gapband small{display:block;font-size:13px;color:var(--muted)}
+.gapband strong{display:block;font:800 28px/1.15 'Geist',system-ui,sans-serif;letter-spacing:-.03em;margin-top:6px}
+.recs{list-style:none;padding:0;margin:0;counter-reset:r}
+.recs li{display:grid;grid-template-columns:56px 1fr auto;gap:8px 16px;padding:22px 0;border-top:1px solid var(--hair);counter-increment:r}
+.recs li::before{content:counter(r);font:800 44px/1 'Geist',system-ui,sans-serif;color:var(--green);letter-spacing:-.04em}
+.recs b{font-size:19px;display:block;margin-top:8px}
+.recs p{color:var(--muted);font-size:15px;margin-top:4px;max-width:62ch}
+.recs .imp{font:600 14px var(--mono);color:var(--green);white-space:nowrap;text-align:right;padding-top:4px}
+.dtable{width:100%;border-collapse:collapse;font-size:14px}
+.dtable th{font:500 12px var(--mono);color:var(--muted);text-align:left;padding:8px 10px;border-bottom:2px solid var(--ink);white-space:nowrap}
+.dtable td{padding:10px;border-bottom:1px solid var(--hair);white-space:nowrap}
+.dtable .r{text-align:right;font-variant-numeric:tabular-nums}
+.dtable tr.you td{background:var(--mint);font-weight:600}
+.scroll-x{overflow-x:auto}
+.cdot{display:inline-block;width:10px;height:10px;margin-right:8px}
+.doc-cta{background:var(--green);color:#fff;padding:40px 48px;display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;align-items:center}
+.doc-cta h2{font-size:30px;letter-spacing:-.03em}
+.doc-cta p{color:#CBE8DB;margin-top:6px}
+.doc-cta .btn{background:#fff;color:var(--ink);border-color:#fff}
+.method{font-size:13px;color:var(--muted);line-height:1.6}
+
+/* ---------- responsive ---------- */
+@media (max-width:980px){
+  .hero-grid,.problem,.tabs-layout,.faq,.kicker,.final .container{grid-template-columns:1fr}
+  .kicker{gap:16px}
+  .hero-copy{padding-bottom:8px}
+  .printer{margin-bottom:64px}
+  .steps{grid-template-columns:repeat(2,minmax(0,1fr));gap:48px 0}
+  .step:nth-child(3){padding-left:0;border-left:0}
+  .people{grid-template-columns:1fr 1fr}
+}
+@media (max-width:720px){
+  .container{padding-inline:20px}
+  .nav-links a:not(.btn),.nav-links .navlink{display:none}
+  .section{padding-block:80px}
+  .hero{padding-top:40px}
+  .form-row{flex-direction:column}
+  .form-row .btn{margin-left:0;margin-top:-2px}
+  .steps,.people,.offer{grid-template-columns:1fr}
+  .step{padding:28px 0 0;border-left:0;border-top:2px solid var(--ink)}
+  .step:first-child{border-top:0;padding-top:0}
+  .step:nth-child(3){padding-left:0}
+  .plan + .plan{border-left:0;border-top:2px solid var(--ink)}
+  .plan{padding:28px}
+  .metrics,.gapband{grid-template-columns:1fr}
+  .metrics > div,.gapband > div{border-left:0;border-top:2px solid var(--ink)}
+  .metrics > div:first-child,.gapband > div:first-child{border-top:0}
+  .pos-row{grid-template-columns:64px 1fr;row-gap:6px}
+  .pos-row .tag{grid-column:2;justify-self:start}
+  .doc{margin:0;border-inline:0;border-top:0}
+  .doc-cover,.doc-sec,.doc-cta{padding:28px 20px}
+  .doc-cover{grid-template-columns:1fr}
+  .recs li{grid-template-columns:40px 1fr}
+  .recs .imp{grid-column:2;text-align:left}
+  .otp{gap:6px}
+  .otp input{width:44px;height:54px}
+  .sheet{box-shadow:6px 6px 0 var(--green)}
+  .ticker-label{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}
+}
+@media print{
+  body > *:not(.rv){display:none!important}
+  body.locked{overflow:visible}
+  .rv{position:static;overflow:visible;background:#fff}
+  .rv-bar,.doc-cta{display:none!important}
+  .doc{margin:0;border:0}
+  .doc-sec,.recs li,.dtable tr{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <a class="brand" href="#top">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" fill="#0B6E4F"/><rect x="6" y="15" width="4" height="7" fill="#fff"/><rect x="12" y="10" width="4" height="12" fill="#fff"/><rect x="18" y="5" width="4" height="17" fill="#9FE0C4"/></svg>
+      Tierscope
+    </a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="#how">How it works</a>
+      <button type="button" class="navlink" id="sampleLink">Sample report</button>
+      <a href="#offer">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a class="btn btn-ink" href="#top" data-focus-url>Check my pricing</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <h1>Find the revenue your pricing leaves on the table.</h1>
+      <p class="lead">Paste your pricing page. Our AI agent compares it with your 20 closest competitors and prints your pricing score in under a minute. Free, no sign-up to start.</p>
+
+      <div class="capture" id="start">
+        <form id="s-url" class="panel" novalidate>
+          <label class="sr" for="url">Your pricing page address</label>
+          <div class="form-row">
+            <input class="input" id="url" type="text" inputmode="url" placeholder="yourcompany.com/pricing" autocomplete="url" spellcheck="false">
+            <button class="btn btn-primary" type="submit">Check my pricing</button>
+          </div>
+          <p class="err" id="urlErr" hidden>Enter your pricing page address, like yourcompany.com/pricing.</p>
+          <p class="hint">Try it with <button type="button" class="linkbtn" data-try="linear.app/pricing">linear.app/pricing</button> or <button type="button" class="linkbtn" data-try="hubspot.com/pricing">hubspot.com/pricing</button>.</p>
+        </form>
+
+        <div id="s-scan" class="panel" hidden aria-live="polite">
+          <div class="log" id="log"></div>
+        </div>
+
+        <form id="s-email" class="panel" hidden novalidate>
+          <span class="step-tag">Your score is ready</span>
+          <h3>Unlock the full report for <span class="co-name"></span></h3>
+          <p class="muted" style="font-size:16px">Two findings and your revenue gap are hidden on the receipt. Enter your work email and we'll send you a code to unlock them.</p>
+          <label class="sr" for="email">Work email</label>
+          <div class="form-row" style="margin-top:16px">
+            <input class="input" id="email" type="email" placeholder="you@company.com" autocomplete="email">
+            <button class="btn btn-primary" type="submit">Send code</button>
+          </div>
+          <p class="err" id="emailErr" hidden>Enter a valid email address, like you@company.com.</p>
+          <ul class="gets">
+            <li>All 3 findings, with the competitor prices behind them</li>
+            <li>Your full comparison with 20 competitors</li>
+            <li>An alert when a competitor changes their prices</li>
+          </ul>
+          <p class="hint"><button type="button" class="linkbtn" data-restart>Check a different URL</button></p>
+        </form>
+
+        <form id="s-otp" class="panel" hidden novalidate>
+          <span class="step-tag">Check your inbox</span>
+          <h3>Enter the 6-digit code</h3>
+          <p class="muted" style="font-size:16px">We sent it to <strong id="emailEcho" style="color:var(--ink)"></strong>.</p>
+          <fieldset style="border:0;padding:0;margin:16px 0 0">
+            <legend class="sr">Verification code</legend>
+            <div class="otp" id="otp">
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 1" autocomplete="one-time-code">
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 2">
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 3">
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 4">
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 5">
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 6">
+            </div>
+          </fieldset>
+          <p class="err" id="otpErr" hidden>That code doesn't match. Check the email and try again.</p>
+          <div style="display:flex;gap:16px;align-items:center;margin-top:18px;flex-wrap:wrap">
+            <button class="btn btn-primary" type="submit">Verify and unlock</button>
+            <button type="button" class="linkbtn" id="resend" disabled>Resend code in 30s</button>
+          </div>
+          <p class="hint"><button type="button" class="linkbtn" data-back-email>Use a different email</button></p>
+        </form>
+
+        <div id="s-done" class="panel" hidden aria-live="polite">
+          <div class="verified"><span class="tick"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="square"/></svg></span><span>Report unlocked for <span class="co-name"></span></span></div>
+          <p class="muted" style="font-size:16px;margin-top:12px">A copy is on its way to your inbox, and we'll tell you when a competitor changes their prices.</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:20px">
+            <button class="btn btn-primary" type="button" id="openReport">Open full report</button>
+            <button class="btn btn-ghost" type="button" data-restart>Check another URL</button>
+          </div>
+        </div>
+      </div>
+
+      <ul class="facts">
+        <li>Uses public pricing pages only</li>
+        <li>Every number links to its source</li>
+      </ul>
+    </div>
+
+    <div class="printer">
+      <div class="slot"><span class="slot-label" id="slotLabel">Sample receipt</span></div>
+      <div class="receipt receipt-paper" id="receipt" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker" aria-label="Examples of competitor price changes the agent tracks">
+  <div class="ticker-wrap">
+    <span class="ticker-label">Price changes spotted this week</span>
+    <div class="ticker-track"><div class="ticker-inner" id="ticker"></div></div>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section class="section">
+  <div class="container problem">
+    <figure style="margin:0">
+      <div class="photo"><img src="https://images.unsplash.com/photo-1758873268745-dd2cf0d677b5?auto=format&fit=crop&w=1400&q=75" alt="A product team gathered around a laptop in a meeting room" loading="lazy"></div>
+      <figcaption>The pricing meeting most teams have once, at launch.</figcaption>
+    </figure>
+    <div>
+      <h2>Most SaaS teams set their prices once and never check them again.</h2>
+      <p class="lead" style="margin-top:20px">Meanwhile competitors add tiers, raise prices and move features behind paywalls. Without a benchmark, you can't tell what you're leaving on the table.</p>
+      <ul class="pains">
+        <li><span class="big">1</span><div><b>Manual research goes stale fast</b><span>A spreadsheet of competitor screenshots is outdated within weeks.</span></div></li>
+        <li><span class="big">2</span><div><b>Plans are hard to compare</b><span>Per seat, per workspace, usage caps: list prices hide the real difference.</span></div></li>
+        <li><span class="big">3</span><div><b>Consultants are slow and expensive</b><span>A full pricing study takes weeks most early teams can't wait for.</span></div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section class="section section-canvas" id="how">
+  <div class="container">
+    <div class="kicker">
+      <h2>What the agent does in under a minute</h2>
+      <p class="lead">The same four jobs a pricing analyst would spend two weeks on. It shows its work at every step, so you can check it.</p>
+    </div>
+    <div class="steps">
+      <article class="step">
+        <span class="n">1</span>
+        <h3>Reads your pricing page</h3>
+        <p>Every plan, price, limit and feature gate, including the fine print.</p>
+        <div class="mini">
+          <div class="r-row"><span>Starter</span><span>€15 / seat</span></div>
+          <div class="r-row"><span>Pro</span><span>€29 / seat</span></div>
+          <div class="r-row"><span>Business</span><span>€79 / seat</span></div>
+        </div>
+      </article>
+      <article class="step">
+        <span class="n">2</span>
+        <h3>Finds who you compete with</h3>
+        <p>Matched on category, customer size and features, not just famous names.</p>
+        <div class="mini">
+          <div class="r-row"><span>Brightlane</span><span class="em">94% match</span></div>
+          <div class="r-row"><span>Closewise</span><span class="em">91% match</span></div>
+          <div class="r-row"><span>+ 18 more</span><span></span></div>
+        </div>
+      </article>
+      <article class="step">
+        <span class="n">3</span>
+        <h3>Makes plans comparable</h3>
+        <p>Different pricing models converted to one unit, so the comparison is fair.</p>
+        <div class="mini">
+          <div class="r-row"><span>€490 / workspace</span><span></span></div>
+          <div class="r-row"><span>÷ 10 seats</span><span class="em">€49 / seat</span></div>
+        </div>
+      </article>
+      <article class="step">
+        <span class="n">4</span>
+        <h3>Recommends changes</h3>
+        <p>The three moves most likely to grow revenue, each with its evidence.</p>
+        <div class="mini">
+          <div class="r-row"><span>Raise Pro</span><span class="warn">€29 → €45</span></div>
+          <div class="r-row"><span>Move SSO to</span><span class="em">Business</span></div>
+          <div class="r-row"><span>Annual plans</span><span class="em">15% off</span></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- REPORT PREVIEW -->
+<section class="section" id="report">
+  <div class="container tabs-layout">
+    <div>
+      <h2>What's in the full report</h2>
+      <p class="lead" style="margin-top:16px">Three views that answer the questions your team and investors will ask.</p>
+      <div class="tablist" role="tablist" aria-label="Report views">
+        <button class="tab" role="tab" id="t1" aria-controls="p1" aria-selected="true"><i>A</i><b>Price position</b><span>Where each plan sits in the market</span></button>
+        <button class="tab" role="tab" id="t2" aria-controls="p2" aria-selected="false" tabindex="-1"><i>B</i><b>Feature gaps</b><span>What you give away that others charge for</span></button>
+        <button class="tab" role="tab" id="t3" aria-controls="p3" aria-selected="false" tabindex="-1"><i>C</i><b>Discounts &amp; trials</b><span>How your offers compare to the norm</span></button>
+      </div>
+      <p style="margin-top:24px"><button type="button" class="btn btn-ghost" id="sampleLink2">Open a full sample report</button></p>
+    </div>
+
+    <div class="sheet">
+      <div class="sheet-bar"><span>Report: Northwind CRM</span><span class="muted">Sample data</span></div>
+      <div class="sheet-body">
+        <div role="tabpanel" id="p1" aria-labelledby="t1" class="panel">
+          <div class="sheet-head"><h3>Your plans vs. 20 competitors</h3><span>€ per seat / month</span></div>
+          <div class="pos-row"><b>Starter</b><div class="pos-track"><div class="line"></div><div class="iqr" style="left:18%;width:26%"></div><span class="c" style="left:10%"></span><span class="c" style="left:20%"></span><span class="c" style="left:27%"></span><span class="c" style="left:35%"></span><span class="c" style="left:42%"></span><span class="c" style="left:55%"></span><span class="y" style="left:26%"></span></div><span class="tag tag-green">On par</span></div>
+          <div class="pos-row"><b>Pro</b><div class="pos-track"><div class="line"></div><div class="iqr" style="left:44%;width:24%"></div><span class="c" style="left:38%"></span><span class="c" style="left:45%"></span><span class="c" style="left:50%"></span><span class="c" style="left:56%"></span><span class="c" style="left:61%"></span><span class="c" style="left:70%"></span><span class="y" style="left:24%"></span></div><span class="tag tag-amber">Too low</span></div>
+          <div class="pos-row"><b>Business</b><div class="pos-track"><div class="line"></div><div class="iqr" style="left:62%;width:22%"></div><span class="c" style="left:58%"></span><span class="c" style="left:64%"></span><span class="c" style="left:70%"></span><span class="c" style="left:77%"></span><span class="c" style="left:85%"></span><span class="c" style="left:92%"></span><span class="y" style="left:72%"></span></div><span class="tag tag-green">On par</span></div>
+          <div class="legend"><span><svg width="10" height="16" aria-hidden="true"><rect width="10" height="16" fill="#0B6E4F"/></svg>You</span><span><svg width="10" height="10" aria-hidden="true"><circle cx="5" cy="5" r="4" fill="#7E8782"/></svg>Competitor</span><span><svg width="22" height="10" aria-hidden="true"><rect width="22" height="10" fill="#D2D7D2"/></svg>Middle half of the market</span></div>
+        </div>
+        <div role="tabpanel" id="p2" aria-labelledby="t2" class="panel" hidden>
+          <div class="sheet-head"><h3>Which plan includes each feature</h3><span>Most common among competitors</span></div>
+          <table class="gtable">
+            <thead><tr><th>Feature</th><th>You</th><th>Market</th></tr></thead>
+            <tbody>
+              <tr><td>Email sequences</td><td class="you">Pro</td><td>Pro</td></tr>
+              <tr class="flag"><td>SSO / SAML</td><td class="you">Pro</td><td>Business</td></tr>
+              <tr class="flag"><td>API access</td><td class="you">Starter</td><td>Pro</td></tr>
+              <tr><td>Custom reports</td><td class="you">Business</td><td>Business</td></tr>
+            </tbody>
+          </table>
+          <div class="note"><b>2 features sit in a cheaper plan than the market</b><p>Moving them up gives customers a clear reason to upgrade.</p></div>
+        </div>
+        <div role="tabpanel" id="p3" aria-labelledby="t3" class="panel" hidden>
+          <div class="sheet-head"><h3>Offers compared with competitors</h3><span>20 products</span></div>
+          <div class="metrics">
+            <div><small>Annual discount</small><strong>0%</strong><span class="tag tag-amber">Market 15–20%</span></div>
+            <div><small>Free trial</small><strong>14 days</strong><span class="tag tag-green">Market 14 days</span></div>
+            <div><small>Free plan</small><strong>None</strong><span class="tag tag-green">6 of 20 have one</span></div>
+          </div>
+          <div class="note"><b>No annual discount on any plan</b><p>Most competitors give 15–20% off for paying yearly, which also lowers churn.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PEOPLE -->
+<section class="section section-canvas">
+  <div class="container">
+    <div class="kicker">
+      <h2>For teams without a pricing department</h2>
+      <p class="lead">One report, three different questions answered.</p>
+    </div>
+    <div class="people">
+      <article class="person">
+        <div class="photo"><img src="https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?auto=format&fit=crop&w=900&q=75" alt="Founder working on a laptop with a phone in hand" loading="lazy"></div>
+        <h3>Founders</h3>
+        <q>Should we raise prices before our next round?</q>
+        <p>Walk into investor meetings knowing where you stand.</p>
+      </article>
+      <article class="person">
+        <div class="photo"><img src="https://images.unsplash.com/photo-1676276376052-dc9c9c0b6917?auto=format&fit=crop&w=900&q=75" alt="Two product managers planning with sticky notes on a whiteboard" loading="lazy"></div>
+        <h3>Product managers</h3>
+        <q>Which plan should this new feature go in?</q>
+        <p>Package features based on what the market charges for.</p>
+      </article>
+      <article class="person">
+        <div class="photo"><img src="https://images.unsplash.com/photo-1525182008055-f88b95ff7980?auto=format&fit=crop&w=900&q=75" alt="Salesperson on a phone call at his desk" loading="lazy"></div>
+        <h3>Sales teams</h3>
+        <q>Why are you more expensive than them?</q>
+        <p>Answer price objections with side-by-side facts.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- OFFER -->
+<section class="section" id="offer">
+  <div class="container">
+    <div class="kicker">
+      <h2>Start free. Get help when you need it.</h2>
+      <p class="lead">The report is free. If you want to act on it, a pricing strategist can help you plan the change.</p>
+    </div>
+    <div class="offer">
+      <div class="plan">
+        <h3>Free report</h3>
+        <div class="price">€0</div>
+        <ul>
+          <li>Pricing score, printed instantly</li>
+          <li>Comparison with your 20 closest competitors</li>
+          <li>Three recommended changes with evidence</li>
+          <li>Alerts when a competitor changes their prices</li>
+        </ul>
+        <a class="btn btn-ink" href="#top" data-focus-url>Check my pricing</a>
+      </div>
+      <div class="plan">
+        <h3>Pricing review</h3>
+        <div class="price">[PRICE]<small>one-off</small></div>
+        <ul>
+          <li>Everything in the free report</li>
+          <li>60-minute session with a pricing strategist</li>
+          <li>New plan structure modelled on your customer mix</li>
+          <li>Plan for moving existing customers to new prices</li>
+        </ul>
+        <a class="btn" href="#offer">Book a pricing review</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section section-canvas" id="faq">
+  <div class="container faq">
+    <h2>Questions</h2>
+    <div>
+      <details><summary>Why do you need my email?<span class="pm" aria-hidden="true">+</span></summary><p>Your score is free and instant. The full report is sent to your inbox so you can keep and share it, and we use the same address to alert you when competitors change prices. You can unsubscribe in one click.</p></details>
+      <details><summary>Where does the competitor data come from?<span class="pm" aria-hidden="true">+</span></summary><p>From competitors' public pricing pages and plan comparison tables. Every number in your report links to the page it came from, captured on the day the report was made.</p></details>
+      <details><summary>Do I need to share revenue or customer data?<span class="pm" aria-hidden="true">+</span></summary><p>No. The report only uses your public pricing page. In a paid review you can choose to share your plan mix so we can size the revenue impact more precisely.</p></details>
+      <details><summary>How accurate is the competitor matching?<span class="pm" aria-hidden="true">+</span></summary><p>The report lists every competitor it used and how closely each one matches. You can remove any that don't fit or add ones it missed.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL -->
+<section class="final">
+  <div class="container">
+    <div>
+      <h2>Is your pricing leaving money on the table?</h2>
+      <p>Find out in under a minute. Free, no sign-up to start.</p>
+    </div>
+    <form id="finalForm" novalidate>
+      <label class="sr" for="url2">Your pricing page address</label>
+      <div class="form-row">
+        <input class="input" id="url2" type="text" inputmode="url" placeholder="yourcompany.com/pricing" spellcheck="false">
+        <button class="btn" type="submit">Check my pricing</button>
+      </div>
+    </form>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>Tierscope is a class concept by [TEAM NAMES], HEC Paris. This demo generates simulated data; companies and figures are fictional.</span>
+    <span>Photos: <a href="https://unsplash.com/@silverkblack">Vitaly Gariev</a>, <a href="https://unsplash.com/@austindistel">Austin Distel</a>, <a href="https://unsplash.com/@walls_io">Walls.io</a>, <a href="https://unsplash.com/@berkeleycommunications">Berkeley Communications</a> on Unsplash</span>
+  </div>
+</footer>
+
+<div class="rv" id="rv" hidden role="dialog" aria-modal="true" aria-labelledby="rvTitle"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ==== LEAD CAPTURE SETTINGS ====================================
+   Paste your Formspree form ID between the quotes, e.g. 'xkgwpqrz'.
+   Every verified lead is then emailed to you by Formspree.
+   Leave it empty and leads are only kept in this browser.        */
+var FORMSPREE_ID='xeaewkke';
+/* =============================================================== */
+
+/* ---------- 1. Deterministic fake data: same URL gives the same report ---------- */
+function hashStr(s){var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function rngFrom(seed){var a=seed;return function(){a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function cleanUrl(raw){return raw.trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').replace(/[?#].*$/,'').replace(/\/+$/,'');}
+function companyFrom(u){
+  var parts=u.split('/')[0].split('.');
+  var core=parts.length>1?parts[parts.length-2]:parts[0];
+  if(['co','com','app','io'].indexOf(core)>-1&&parts.length>2)core=parts[parts.length-3];
+  core=core.replace(/[^a-z0-9-]/g,'');
+  return core.split(/[-_]/).filter(Boolean).map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join(' ')||'Your company';
+}
+
+var CATS=[
+  {key:/crm|sales|deal|lead|pipe|hubspot|close/,name:'CRM',unit:'seat',base:[15,39,79],feat:[['Email sequences',1],['Pipeline automation',1],['API access',1],['SSO / SAML',2],['Custom reports',2],['Audit log',2]]},
+  {key:/task|project|plan|linear|asana|jira|board|track|notion|monday/,name:'Project management',unit:'seat',base:[8,16,30],feat:[['Unlimited projects',0],['Automations',1],['Time tracking',1],['Guest access',1],['SSO / SAML',2],['Audit log',2]]},
+  {key:/analytic|data|metric|insight|stat|mixpanel|amplitude/,name:'Product analytics',unit:'1k users',base:[49,149,399],feat:[['Dashboards',0],['Funnels',1],['Group analytics',1],['Data warehouse sync',2],['SSO / SAML',2],['Data governance',2]]},
+  {key:/help|support|desk|chat|intercom|zendesk|ticket/,name:'Customer support',unit:'seat',base:[19,49,99],feat:[['Shared inbox',0],['Live chat',1],['AI answers',1],['SLA rules',2],['SSO / SAML',2],['Custom reports',2]]},
+  {key:/hr|pay|people|talent|hire|recruit/,name:'HR software',unit:'employee',base:[6,12,20],feat:[['Time off',0],['Onboarding',1],['Performance reviews',1],['Payroll sync',1],['SSO / SAML',2],['Custom fields',2]]},
+  {key:/design|figma|canva|draw|whiteboard|miro/,name:'Design and collaboration',unit:'editor',base:[12,24,45],feat:[['Unlimited files',0],['Shared libraries',1],['Dev mode',1],['Branching',2],['SSO / SAML',2],['Audit log',2]]},
+  {key:/mail|newsletter|campaign|chimp|klaviyo/,name:'Email marketing',unit:'5k contacts',base:[29,79,199],feat:[['Templates',0],['Automations',1],['A/B testing',1],['Send-time optimisation',2],['Dedicated IP',2],['SSO / SAML',2]]},
+  {key:/sec|guard|vault|auth|pass|shield/,name:'Security',unit:'seat',base:[10,25,50],feat:[['Password vault',0],['Device checks',1],['Audit log',1],['SSO / SAML',1],['Custom policies',2],['SIEM export',2]]}
+];
+var TIERS=['Starter','Pro','Business'];
+var PRE=['Pipe','Deal','Close','Bright','Ledger','Sales','Flow','Stack','Pulse','Orbit','Clear','Nimble','Vector','Signal','Harbor','Quill','Atlas','Kite','Loop','Cobalt','Ember','Tidal','Summit','Beacon','Folio','Ridge','Lumen','Cedar','Nova','Fathom','Prism','Relay'];
+var SUF=['well','mint','wise','lane','kit','loom','base','ly','desk','stack','hq','grid','forge','path','spark','nest','bay','works','cloud','board','line','hub'];
+var DOT=['#5B5BD6','#C2410C','#0E7490','#7C3AED','#4D7C0F','#BE185D','#A16207','#0369A1','#9333EA','#15803D'];
+
+function niceP(p,r){if(p<10)return Math.max(1,Math.round(p));if(p<100)return Math.round(p/5)*5-(r()<.5?1:0);return Math.round(p/10)*10-(r()<.5?1:0);}
+function pct(arr,q){var a=arr.slice().sort(function(x,y){return x-y;});var i=(a.length-1)*q,lo=Math.floor(i),hi=Math.ceil(i);return a[lo]+(a[hi]-a[lo])*(i-lo);}
+function plural(u){return /s$/.test(u)?u:u+'s';}
+function cheaperText(n){return n>=20?'all 20':n+' of 20';}
+function money(n){return '€'+Math.round(n).toLocaleString('en-US');}
+function pick(arr,r){return arr[Math.floor(r()*arr.length)];}
+
+function buildReport(rawUrl){
+  var url=cleanUrl(rawUrl),r=rngFrom(hashStr(url)),company=companyFrom(url),cat=null;
+  for(var i=0;i<CATS.length;i++){if(CATS[i].key.test(url.split('/')[0])){cat=CATS[i];break;}}
+  if(!cat)cat=CATS[Math.floor(r()*CATS.length)];
+
+  var seen={},comps=[];
+  while(comps.length<20){
+    var n=pick(PRE,r)+pick(SUF,r);
+    if(seen[n]||n.toLowerCase()===company.toLowerCase().replace(/\s/g,''))continue;
+    seen[n]=1;
+    var f=.82+r()*.45;
+    comps.push({name:n,color:DOT[comps.length%DOT.length],
+      prices:cat.base.map(function(b){return niceP(b*f*(.9+r()*.22),r);}),
+      annual:pick([0,10,15,15,17,20,20,20,25],r),trial:pick([0,7,14,14,14,14,30],r),free:r()<.3});
+  }
+  comps.forEach(function(c,i){c.match=Math.round(96-i*1.2-r()*2);});comps.sort(function(a,b){return b.match-a.match;});comps.forEach(function(c,i){c.color=DOT[i%DOT.length];});
+
+  var you=[niceP(cat.base[0]*(.85+r()*.25),r),niceP(cat.base[1]*(.55+r()*.2),r),niceP(cat.base[2]*(.92+r()*.25),r)];
+  var tiers=TIERS.map(function(t,ti){
+    var ps=comps.map(function(c){return c.prices[ti];});
+    var q1=pct(ps,.25),q3=pct(ps,.75);
+    return {name:t,you:you[ti],prices:ps,q1:q1,q3:q3,med:pct(ps,.5),min:Math.min.apply(null,ps),max:Math.max.apply(null,ps),
+      pricier:ps.filter(function(p){return p>you[ti];}).length,verdict:you[ti]<q1?'Too low':you[ti]>q3?'High':'On par'};
+  });
+  var pro=tiers[1];
+
+  var feats=cat.feat.map(function(fx){return{name:fx[0],market:fx[1],you:fx[1],share:55+Math.floor(r()*30)};});
+  var cand=feats.filter(function(f){return f.market>=1;}),flagged=[];
+  while(flagged.length<2&&cand.length){flagged.push(cand.splice(Math.floor(r()*cand.length),1)[0]);}
+  flagged.forEach(function(f){f.you=f.market-1;f.flag=true;});
+  flagged.sort(function(a,b){return b.market-a.market;});
+
+  var annuals=comps.map(function(c){return c.annual;}).filter(function(a){return a>0;});
+  var mAnnual=Math.round(pct(annuals,.5)),yourAnnual=r()<.65?0:pick([10,15,20],r);
+  var mTrial=Math.round(pct(comps.map(function(c){return c.trial;}),.5)),yourTrial=pick([7,14,14,30],r);
+  var freeCount=comps.filter(function(c){return c.free;}).length;
+
+  var rec=niceP(Math.max(pro.q1,pro.you*1.15),r);
+  var seats=150+Math.floor(r()*850),gapYr=(rec-pro.you)*seats*12;
+  var f0=flagged[0],f1=flagged[1];
+  var recs=[
+    {area:'Price',title:'Raise Pro from '+money(pro.you)+' to '+money(rec)+' per '+cat.unit,
+     why:'Pro is cheaper than '+cheaperText(pro.pricier)+' competitors. Comparable plans charge '+money(pro.q1)+'–'+money(pro.q3)+'. At '+money(rec)+' you stay in the cheaper half of the market.',
+     impact:'+'+money(Math.round(gapYr*.8/1000)*1000)+'–'+money(Math.round(gapYr*1.2/1000)*1000)+' a year'},
+    {area:'Packaging',title:'Move '+f0.name+(f1&&f1.market===f0.market?' and '+f1.name:'')+' to '+TIERS[f0.market],
+     why:'Most competitors only include '+(f1&&f1.market===f0.market?'these features':'this feature')+' from '+TIERS[f0.market]+' upwards. You include '+(f1&&f1.market===f0.market?'them':'it')+' in '+TIERS[f0.you]+', which removes a reason to upgrade.',
+     impact:'More upgrades'},
+    yourAnnual===0?
+      {area:'Billing',title:'Offer '+mAnnual+'% off annual plans',why:annuals.length+' of 20 competitors discount yearly billing, by '+mAnnual+'% on average. Yearly plans also reduce churn.',impact:'Lower churn'}:
+    yourTrial<mTrial?
+      {area:'Billing',title:'Extend your free trial to '+mTrial+' days',why:'Your '+yourTrial+'-day trial is shorter than the market median of '+mTrial+' days, which may cost you sign-ups.',impact:'More sign-ups'}:
+      {area:'Packaging',title:'Add a usage limit to Starter',why:'Your Starter plan is more generous than most competitors\' entry plans. A limit makes Pro the natural next step for growing teams.',impact:'More upgrades'}
+  ];
+  var score=100-Math.round(pro.pricier/20*34)-flagged.length*6-(yourAnnual===0?8:0)-(yourTrial<mTrial?4:0)+Math.floor(r()*6);
+  score=Math.max(31,Math.min(84,score));
+  return {url:url,company:company,cat:cat,comps:comps,tiers:tiers,feats:feats,flagged:flagged,recs:recs,score:score,seats:seats,
+    gapLo:Math.round(gapYr*.8/1000)*1000,gapHi:Math.round(gapYr*1.2/1000)*1000,offers:{mAnnual:mAnnual,yourAnnual:yourAnnual,annualCount:annuals.length,mTrial:mTrial,yourTrial:yourTrial,freeCount:freeCount},
+    id:String(hashStr(url)%9000+1000),date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})};
+}
+
+/* ---------- 2. Receipt ---------- */
+function barcode(seed){
+  var r=rngFrom(seed),x=0,s='';
+  while(x<300){var w=1+Math.floor(r()*3.5);if(r()>.42)s+='<rect x="'+x+'" width="'+w+'" height="44" fill="#121614"/>';x+=w+1;}
+  return '<svg class="barcode" viewBox="0 0 300 44" preserveAspectRatio="none" width="100%" aria-hidden="true">'+s+'</svg>';
+}
+function receiptHTML(R,sample){
+  var pro=R.tiers[1];
+  return '<div class="stamp">UNLOCKED</div>'+
+  '<div class="r-center"><div class="r-brand">Tierscope</div><div>Pricing check #'+R.id+'</div><div>'+esc(R.url)+'</div><div>'+R.date+'</div></div>'+
+  '<hr class="r-rule">'+
+  '<div class="r-row"><span>Category</span><span>'+esc(R.cat.name)+'</span></div>'+
+  '<div class="r-row"><span>Rivals compared</span><span>20</span></div>'+
+  '<hr class="r-rule">'+
+  '<div class="r-row"><span>Your Pro plan</span><span>'+money(pro.you)+'.00</span></div>'+
+  '<div class="r-row"><span>Market middle</span><span>'+money(pro.med)+'.00</span></div>'+
+  '<div class="r-row"><span>Cheapest rival</span><span>'+money(pro.min)+'.00</span></div>'+
+  '<hr class="r-rule">'+
+  '<div class="r-big"><span>Pricing score</span><strong>'+R.score+'<span style="font-size:15px;font-weight:500">/100</span></strong></div>'+
+  '<hr class="r-rule">'+
+  '<div style="font-weight:600">Findings</div>'+
+  '<div class="r-find"><span>1</span><span>Pro is cheaper than '+cheaperText(pro.pricier)+' rivals.</span>'+
+  '<span>2</span><span class="blurred">'+esc(R.recs[1].title)+'.</span>'+
+  '<span>3</span><span class="blurred">'+esc(R.recs[2].title)+'.</span></div>'+
+  '<hr class="r-rule">'+
+  '<div class="r-row" style="font-weight:600"><span>Revenue gap / yr</span><span class="blurred">'+money(R.gapLo)+'+</span></div>'+
+  '<p class="lock-note" data-lock>'+(sample?'Sample. Enter your URL to print yours.':'<button type="button" class="linkbtn" data-goto-email>Unlock lines 2, 3 and your revenue gap with your email</button>')+'</p>'+
+  barcode(hashStr(R.url))+
+  '<div class="r-center" style="margin-top:8px">Thank you for checking.</div>';
+}
+var receipt=document.getElementById('receipt'),slotLabel=document.getElementById('slotLabel');
+function printReceipt(R,sample){
+  receipt.classList.remove('printing','unlocked');
+  receipt.innerHTML=receiptHTML(R,sample);
+  void receipt.offsetWidth;
+  receipt.classList.add('printing');
+  slotLabel.textContent=sample?'Sample receipt':'Printed for '+R.company;
+  var g=receipt.querySelector('[data-goto-email]');
+  if(g)g.onclick=function(){steps['s-email'].scrollIntoView({behavior:'smooth',block:'center'});setTimeout(function(){emailIn.focus({preventScroll:true});},500);};
+}
+
+/* ---------- 3. Ticker (illustrative) ---------- */
+(function(){
+  var tr=rngFrom(7),items=[];
+  for(var i=0;i<12;i++){
+    var n=pick(PRE,tr)+pick(SUF,tr),t=pick(TIERS,tr),a=niceP(10+tr()*80,tr),up=tr()<.7,b=niceP(up?a*(1.12+tr()*.3):a*(.78+tr()*.1),tr);
+    items.push('<span><b>'+n+'</b> '+(up?'raised':'cut')+' '+t+' <span class="'+(up?'up':'down')+'">€'+a+' → €'+b+'</span></span>');
+  }
+  document.getElementById('ticker').innerHTML=items.join('')+items.join('');
+})();
+
+/* ---------- 4. Lead flow ---------- */
+var steps={};['s-url','s-scan','s-email','s-otp','s-done'].forEach(function(id){steps[id]=document.getElementById(id);});
+function show(id){Object.keys(steps).forEach(function(k){steps[k].hidden=k!==id;});}
+var urlIn=document.getElementById('url'),emailIn=document.getElementById('email');
+var current=null,code=null,busy=false;
+
+function startCheck(raw){
+  if(busy)return;
+  var u=cleanUrl(raw),ok=/^[a-z0-9-]+(\.[a-z0-9-]+)+(\/.*)?$/.test(u);
+  document.getElementById('urlErr').hidden=ok;
+  if(!ok){show('s-url');urlIn.focus();return;}
+  busy=true;
+  current=buildReport(u);
+  document.querySelectorAll('.co-name').forEach(function(e){e.textContent=current.company;});
+  show('s-scan');
+  runLog(current,function(){
+    busy=false;
+    printReceipt(current,false);
+    show('s-email');
+    if(window.innerWidth<980)document.querySelector('.printer').scrollIntoView({behavior:'smooth',block:'start'});
+    else setTimeout(function(){emailIn.focus({preventScroll:true});},300);
+  });
+}
+function runLog(R,done){
+  var log=document.getElementById('log'),i=0;
+  var lines=[['dim','$ tierscope check '+esc(R.url)],['','Reading pricing page… <span class="ok">3 plans found</span>'],['','Category: <span class="ok">'+esc(R.cat.name)+'</span>'],
+    ['','Matching competitors… <span class="ok">20 found</span>'],['','Converting to € per '+esc(R.cat.unit)+'… <span class="ok">done</span>'],['','Scoring… <span class="ok">'+R.score+'/100</span>'],['dim','Printing your receipt']];
+  log.innerHTML='';
+  (function next(){
+    if(i>=lines.length){log.insertAdjacentHTML('beforeend','<span class="cursor"></span>');setTimeout(done,450);return;}
+    var p=document.createElement('p');p.className=lines[i][0];p.innerHTML=lines[i][1];log.appendChild(p);i++;
+    setTimeout(next,380+Math.random()*260);
+  })();
+}
+
+document.getElementById('s-url').addEventListener('submit',function(e){e.preventDefault();startCheck(urlIn.value);});
+document.querySelectorAll('[data-try]').forEach(function(b){b.addEventListener('click',function(){urlIn.value=b.getAttribute('data-try');startCheck(urlIn.value);});});
+document.getElementById('finalForm').addEventListener('submit',function(e){
+  e.preventDefault();var v=document.getElementById('url2').value;urlIn.value=v;
+  window.scrollTo({top:0,behavior:'smooth'});setTimeout(function(){startCheck(v);},350);
+});
+document.querySelectorAll('[data-focus-url]').forEach(function(a){a.addEventListener('click',function(){setTimeout(function(){if(!steps['s-url'].hidden)urlIn.focus({preventScroll:true});},350);});});
+document.querySelectorAll('[data-restart]').forEach(function(b){b.addEventListener('click',function(){show('s-url');urlIn.select();urlIn.focus();});});
+
+var toastEl=null,resendTimer=null;
+document.getElementById('s-email').addEventListener('submit',function(e){
+  e.preventDefault();
+  var ok=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailIn.value.trim());
+  document.getElementById('emailErr').hidden=ok;
+  if(!ok){emailIn.focus();return;}
+  document.getElementById('emailEcho').textContent=emailIn.value.trim();
+  show('s-otp');clearOtp();sendCode();boxes[0].focus();
+});
+function sendCode(){
+  code=String(Math.floor(100000+Math.random()*900000));
+  setTimeout(showToast,900); // feels like an email arriving
+  var left=30,btn=document.getElementById('resend');btn.disabled=true;btn.textContent='Resend code in 30s';
+  clearInterval(resendTimer);
+  resendTimer=setInterval(function(){left--;if(left<=0){clearInterval(resendTimer);btn.disabled=false;btn.textContent='Resend code';}else btn.textContent='Resend code in '+left+'s';},1000);
+}
+function closeToast(){if(toastEl){toastEl.remove();toastEl=null;}}
+function showToast(){
+  closeToast();
+  toastEl=document.createElement('div');toastEl.className='toast';toastEl.setAttribute('role','status');
+  toastEl.innerHTML='<span class="av"><svg width="18" height="18" viewBox="0 0 28 28" aria-hidden="true"><rect x="6" y="15" width="4" height="7" fill="#fff"/><rect x="12" y="10" width="4" height="12" fill="#fff"/><rect x="18" y="5" width="4" height="17" fill="#9FE0C4"/></svg></span>'+
+    '<div><small>Demo inbox, just now</small><b>Your Tierscope code</b><p>Use <code>'+code+'</code> to unlock your report.<br><button type="button" class="linkbtn" data-fill>Fill it in for me</button></p></div>'+
+    '<button type="button" class="x" aria-label="Dismiss">×</button>';
+  document.body.appendChild(toastEl);
+  toastEl.querySelector('.x').onclick=closeToast;
+  toastEl.querySelector('[data-fill]').onclick=function(){code.split('').forEach(function(d,i){boxes[i].value=d;});boxes[5].focus();verify();};
+}
+document.getElementById('resend').addEventListener('click',function(){clearOtp();sendCode();boxes[0].focus();});
+document.querySelector('[data-back-email]').addEventListener('click',function(){closeToast();show('s-email');emailIn.select();emailIn.focus();});
+
+var otpWrap=document.getElementById('otp'),boxes=[].slice.call(otpWrap.querySelectorAll('input'));
+function clearOtp(){boxes.forEach(function(b){b.value='';});otpWrap.classList.remove('bad');document.getElementById('otpErr').hidden=true;}
+boxes.forEach(function(b,i){
+  b.addEventListener('input',function(){
+    var v=b.value.replace(/\D/g,'');
+    if(v.length>1){v.split('').slice(0,6-i).forEach(function(d,j){boxes[i+j].value=d;});boxes[Math.min(i+v.length,5)].focus();}
+    else{b.value=v;if(v&&i<5)boxes[i+1].focus();}
+    otpWrap.classList.remove('bad');document.getElementById('otpErr').hidden=true;
+    if(boxes.every(function(x){return x.value;}))verify();
+  });
+  b.addEventListener('keydown',function(e){
+    if(e.key==='Backspace'&&!b.value&&i>0){boxes[i-1].value='';boxes[i-1].focus();e.preventDefault();}
+    if(e.key==='ArrowLeft'&&i>0)boxes[i-1].focus();
+    if(e.key==='ArrowRight'&&i<5)boxes[i+1].focus();
+  });
+  b.addEventListener('paste',function(e){
+    var t=(e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
+    if(!t)return;e.preventDefault();
+    t.split('').forEach(function(d,j){if(boxes[j])boxes[j].value=d;});
+    boxes[Math.min(t.length,5)].focus();
+    if(t.length===6)verify();
+  });
+});
+document.getElementById('s-otp').addEventListener('submit',function(e){e.preventDefault();verify();});
+function verify(){
+  var v=boxes.map(function(b){return b.value;}).join('');
+  if(v.length<6){document.getElementById('otpErr').textContent='Enter all 6 digits of the code.';document.getElementById('otpErr').hidden=false;return;}
+  if(v!==code){
+    document.getElementById('otpErr').textContent="That code doesn't match. Check the email and try again.";
+    otpWrap.classList.remove('bad');void otpWrap.offsetWidth;otpWrap.classList.add('bad');
+    document.getElementById('otpErr').hidden=false;return;
+  }
+  closeToast();clearInterval(resendTimer);
+  // store the lead locally (a real deployment would POST this to a form backend)
+  saveLead({email:emailIn.value.trim(),company:current.company,url:current.url,category:current.cat.name,score:current.score,revenue_gap:money(current.gapLo)+'–'+money(current.gapHi),at:new Date().toISOString()});
+  receipt.classList.add('unlocked');
+  var ln=receipt.querySelector('[data-lock]');if(ln)ln.textContent='Unlocked for '+emailIn.value.trim();
+  show('s-done');
+  setTimeout(function(){if(!steps['s-done'].hidden&&rv.hidden)openReport(current);},1600);
+}
+
+function saveLead(lead){
+  try{var L=JSON.parse(localStorage.getItem('tierscope_leads')||'[]');L.push(lead);localStorage.setItem('tierscope_leads',JSON.stringify(L));}catch(err){}
+  if(!FORMSPREE_ID)return;
+  var body=Object.assign({_subject:'New Tierscope lead: '+lead.company+' ('+lead.score+'/100)',_replyto:lead.email},lead);
+  fetch('https://formspree.io/f/'+encodeURIComponent(FORMSPREE_ID),{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)})
+    .catch(function(){/* the visitor still gets their report if sending fails */});
+}
+document.getElementById('openReport').addEventListener('click',function(){openReport(current);});
+
+/* ---------- 5. Full report ---------- */
+var rv=document.getElementById('rv'),lastFocus=null;
+function strip(t,R){
+  var lo=Math.min(t.min,t.you)*.9,hi=Math.max(t.max,t.you)*1.05,pos=function(p){return((p-lo)/(hi-lo)*100).toFixed(1);};
+  var dots=t.prices.map(function(p,i){return '<span class="c" style="left:'+pos(p)+'%" title="'+esc(R.comps[i].name)+': '+money(p)+'"></span>';}).join('');
+  return '<div class="pos-row"><b>'+t.name+'</b><div class="pos-track"><div class="line"></div><div class="iqr" style="left:'+pos(t.q1)+'%;width:'+(pos(t.q3)-pos(t.q1)).toFixed(1)+'%"></div>'+dots+
+    '<span class="y" style="left:'+pos(t.you)+'%" title="You: '+money(t.you)+'"></span></div><span class="tag '+(t.verdict==='On par'?'tag-green':'tag-amber')+'">'+money(t.you)+', '+t.verdict.toLowerCase()+'</span></div>';
+}
+function reportHTML(R){
+  var o=R.offers,good=R.score>=70,verdict=good?'Healthy, with room to grow':R.score>=50?'Leaving money on the table':'Significantly underpriced';
+  var circ=2*Math.PI*70,off=circ*(1-R.score/100);
+  var youRow='<tr class="you"><td><span class="cdot" style="background:#0B6E4F"></span>'+esc(R.company)+' (you)</td><td class="r">–</td>'+R.tiers.map(function(t){return '<td class="r">'+money(t.you)+'</td>';}).join('')+'<td class="r">'+(o.yourAnnual?o.yourAnnual+'%':'–')+'</td><td class="r">'+o.yourTrial+' days</td></tr>';
+  var compRows=R.comps.map(function(c){return '<tr><td><span class="cdot" style="background:'+c.color+'"></span>'+esc(c.name)+'</td><td class="r">'+c.match+'%</td>'+c.prices.map(function(p){return '<td class="r">'+money(p)+'</td>';}).join('')+'<td class="r">'+(c.annual?c.annual+'%':'–')+'</td><td class="r">'+(c.trial?c.trial+' days':'–')+'</td></tr>';}).join('');
+  var featRows=R.feats.map(function(f){return '<tr'+(f.flag?' class="flag"':'')+'><td>'+esc(f.name)+'</td><td class="you">'+TIERS[f.you]+'</td><td>'+TIERS[f.market]+'</td><td class="r">'+f.share+'% of rivals</td></tr>';}).join('');
+  return '<div class="rv-bar"><div class="container">'+
+    '<button type="button" class="btn btn-ghost" data-close>← Back to Tierscope</button>'+
+    '<div class="acts"><button type="button" class="btn btn-ghost" data-print>Download PDF</button><a class="btn btn-primary" href="#offer" data-close-to>Book a pricing review</a></div>'+
+  '</div></div>'+
+  '<article class="doc">'+
+    '<header class="doc-cover">'+
+      '<div><div class="meta">Pricing report #'+R.id+', '+R.date+'<br>'+esc(R.url)+'</div>'+
+      '<h1 id="rvTitle">'+esc(R.company)+'</h1>'+
+      '<p class="lead">Compared with 20 competitors in '+esc(R.cat.name.toLowerCase())+'. Prices in € per '+esc(R.cat.unit)+' per month.</p></div>'+
+      '<div class="gauge"><svg width="160" height="160" viewBox="0 0 160 160" aria-hidden="true"><circle cx="80" cy="80" r="70" fill="none" stroke="#E6E9E5" stroke-width="14"/><circle cx="80" cy="80" r="70" fill="none" stroke="'+(good?'#0B6E4F':'#C2690A')+'" stroke-width="14" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'" transform="rotate(-90 80 80)"/></svg>'+
+      '<div class="gval"><b>'+R.score+'</b><small>Pricing score</small></div><span class="tag '+(good?'tag-green':'tag-amber')+'">'+verdict+'</span></div>'+
+    '</header>'+
+    '<section class="doc-sec"><h2>Summary</h2><p class="sub">What fixing the gaps below could be worth.</p>'+
+      '<div class="gapband"><div><small>Revenue gap per year</small><strong>'+money(R.gapLo)+'–'+money(R.gapHi)+'</strong></div>'+
+      '<div><small>Your Pro vs. market middle</small><strong>'+money(R.tiers[1].you)+' vs '+money(R.tiers[1].med)+'</strong></div>'+
+      '<div><small>Features given away early</small><strong>'+R.flagged.length+' of '+R.feats.length+'</strong></div></div>'+
+      '<p class="method" style="margin-top:12px">The gap estimate assumes '+R.seats+' paying '+esc(plural(R.cat.unit))+' on Pro. A pricing review replaces this with your real customer mix.</p>'+
+    '</section>'+
+    '<section class="doc-sec"><h2>Recommended changes</h2><p class="sub">Ranked by likely revenue impact.</p><ol class="recs">'+
+      R.recs.map(function(x){return '<li><div><span class="tag '+(x.area==='Price'?'tag-amber':'tag-green')+'">'+x.area+'</span><b>'+esc(x.title)+'</b><p>'+esc(x.why)+'</p></div><span class="imp">'+esc(x.impact)+'</span></li>';}).join('')+
+    '</ol></section>'+
+    '<section class="doc-sec"><h2>Price position</h2><p class="sub">Each dot is a competitor. Hover over a dot to see who it is.</p>'+R.tiers.map(function(t){return strip(t,R);}).join('')+
+      '<div class="legend"><span><svg width="10" height="16" aria-hidden="true"><rect width="10" height="16" fill="#0B6E4F"/></svg>You</span><span><svg width="10" height="10" aria-hidden="true"><circle cx="5" cy="5" r="4" fill="#7E8782"/></svg>Competitor</span><span><svg width="22" height="10" aria-hidden="true"><rect width="22" height="10" fill="#D2D7D2"/></svg>Middle half of the market</span></div>'+
+    '</section>'+
+    '<section class="doc-sec"><h2>Feature packaging</h2><p class="sub">The cheapest plan that includes each feature. Highlighted rows are features you give away earlier than the market.</p>'+
+      '<div class="scroll-x"><table class="gtable"><thead><tr><th>Feature</th><th>You</th><th>Market</th><th class="r">Agreement</th></tr></thead><tbody>'+featRows+'</tbody></table></div>'+
+    '</section>'+
+    '<section class="doc-sec"><h2>Discounts and trials</h2><p class="sub">How your offers compare with the 20 competitors.</p><div class="metrics">'+
+      '<div><small>Annual discount</small><strong>'+(o.yourAnnual?o.yourAnnual+'%':'None')+'</strong><span class="tag '+(o.yourAnnual?'tag-green':'tag-amber')+'">'+o.annualCount+' of 20 offer one, median '+o.mAnnual+'%</span></div>'+
+      '<div><small>Free trial</small><strong>'+o.yourTrial+' days</strong><span class="tag '+(o.yourTrial>=o.mTrial?'tag-green':'tag-amber')+'">Market median '+o.mTrial+' days</span></div>'+
+      '<div><small>Free plan</small><strong>None</strong><span class="tag tag-green">'+o.freeCount+' of 20 have one</span></div>'+
+    '</div></section>'+
+    '<section class="doc-sec"><h2>All 20 competitors</h2><p class="sub">Sorted by how closely they match your product. Prices in € per '+esc(R.cat.unit)+' per month.</p>'+
+      '<div class="scroll-x"><table class="dtable"><thead><tr><th>Product</th><th class="r">Match</th><th class="r">Starter</th><th class="r">Pro</th><th class="r">Business</th><th class="r">Annual discount</th><th class="r">Trial</th></tr></thead><tbody>'+youRow+compRows+'</tbody></table></div>'+
+    '</section>'+
+    '<section class="doc-sec"><p class="method"><b>How this report was made.</b> The agent read the pricing page at '+esc(R.url)+', matched 20 competitors by category, customer size and feature overlap, and converted every plan to € per '+esc(R.cat.unit)+' per month. <b>This is a demo:</b> every competitor and figure is simulated from the address you entered.</p></section>'+
+    '<section class="doc-cta"><div><h2>Want help making these changes?</h2><p>A 60-minute session with a pricing strategist, using this report.</p></div><a class="btn" href="#offer" data-close-to>Book a pricing review</a></section>'+
+  '</article>';
+}
+function openReport(R){
+  lastFocus=document.activeElement;
+  rv.innerHTML=reportHTML(R);rv.hidden=false;rv.scrollTop=0;
+  document.body.classList.add('locked');
+  if(location.hash!=='#full-report')history.pushState({rv:1},'','#full-report');
+  rv.querySelector('[data-close]').onclick=function(){history.back();};
+  rv.querySelector('[data-print]').onclick=function(){window.print();};
+  rv.querySelectorAll('[data-close-to]').forEach(function(a){a.onclick=function(e){e.preventDefault();closeReport();history.replaceState(null,'','#offer');document.getElementById('offer').scrollIntoView();};});
+  rv.querySelector('[data-close]').focus();
+}
+function closeReport(){
+  if(rv.hidden)return;
+  rv.hidden=true;rv.innerHTML='';document.body.classList.remove('locked');
+  if(lastFocus&&document.contains(lastFocus))lastFocus.focus({preventScroll:true});
+}
+window.addEventListener('popstate',function(){if(location.hash!=='#full-report')closeReport();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!rv.hidden)history.back();});
+
+var SAMPLE=buildReport('northwind-crm.com/pricing');
+['sampleLink','sampleLink2'].forEach(function(id){document.getElementById(id).addEventListener('click',function(){openReport(SAMPLE);});});
+
+/* ---------- 6. Landing-page tabs ---------- */
+var tabs=[].slice.call(document.querySelectorAll('[role=tab]'));
+function selectTab(t){tabs.forEach(function(x){var on=x===t;x.setAttribute('aria-selected',on);x.tabIndex=on?0:-1;document.getElementById(x.getAttribute('aria-controls')).hidden=!on;});}
+tabs.forEach(function(t,i){
+  t.addEventListener('click',function(){selectTab(t);});
+  t.addEventListener('keydown',function(e){var d=e.key==='ArrowDown'||e.key==='ArrowRight'?1:e.key==='ArrowUp'||e.key==='ArrowLeft'?-1:0;if(!d)return;e.preventDefault();var n=tabs[(i+d+tabs.length)%tabs.length];selectTab(n);n.focus();});
+});
+
+if(location.hash==='#full-report')history.replaceState(null,'','#top');
+printReceipt(SAMPLE,true);
+})();
+</script>
+</body>
+</html>
