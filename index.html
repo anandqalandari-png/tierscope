@@ -57,6 +57,8 @@ a{color:var(--green)}
 .err{font-size:14px;color:var(--red);margin-top:10px;font-weight:500}
 .linkbtn{background:none;border:0;padding:0;color:var(--green);font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .linkbtn:disabled{color:var(--muted);text-decoration:none;cursor:default}
+.check{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:15px;line-height:1.45;color:var(--muted);cursor:pointer}
+.check input{flex:none;width:20px;height:20px;margin:1px 0 0;accent-color:var(--green);cursor:pointer}
 
 /* ---------- nav ---------- */
 .nav{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:2px solid var(--ink)}
@@ -402,6 +404,7 @@ footer a{color:var(--muted)}
             <input class="input" id="email" type="email" placeholder="you@company.com" autocomplete="email">
             <button class="btn btn-primary" type="submit">Send code</button>
           </div>
+          <label class="check"><input type="checkbox" id="consent"><span>Email me my report and occasional pricing tips. You can unsubscribe at any time.</span></label>
           <p class="err" id="emailErr" hidden>Enter a valid email address, like you@company.com.</p>
           <ul class="gets">
             <li>All 3 findings, with the competitor prices behind them</li>
@@ -694,13 +697,6 @@ footer a{color:var(--muted)}
 (function(){
 'use strict';
 
-/* ==== LEAD CAPTURE SETTINGS ====================================
-   Paste your Formspree form ID between the quotes, e.g. 'xkgwpqrz'.
-   Every verified lead is then emailed to you by Formspree.
-   Leave it empty and leads are only kept in this browser.        */
-var FORMSPREE_ID='xeaewkke';
-/* =============================================================== */
-
 /* ---------- 1. Deterministic fake data: same URL gives the same report ---------- */
 function hashStr(s){var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function rngFrom(seed){var a=seed;return function(){a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
@@ -954,20 +950,18 @@ function verify(){
     document.getElementById('otpErr').hidden=false;return;
   }
   closeToast();clearInterval(resendTimer);
-  // store the lead locally (a real deployment would POST this to a form backend)
-  saveLead({email:emailIn.value.trim(),company:current.company,url:current.url,category:current.cat.name,score:current.score,revenue_gap:money(current.gapLo)+'–'+money(current.gapHi),at:new Date().toISOString()});
+  saveLead({email:emailIn.value.trim(),consent:document.getElementById('consent').checked,
+    answers:{url:current.url,company:current.company,category:current.cat.name,score:current.score,revenue_gap:money(current.gapLo)+'–'+money(current.gapHi),report_id:current.id}});
   receipt.classList.add('unlocked');
   var ln=receipt.querySelector('[data-lock]');if(ln)ln.textContent='Unlocked for '+emailIn.value.trim();
   show('s-done');
   setTimeout(function(){if(!steps['s-done'].hidden&&rv.hidden)openReport(current);},1600);
 }
 
+// Saved in Supabase by our server route; the browser never talks to Supabase.
 function saveLead(lead){
-  try{var L=JSON.parse(localStorage.getItem('tierscope_leads')||'[]');L.push(lead);localStorage.setItem('tierscope_leads',JSON.stringify(L));}catch(err){}
-  if(!FORMSPREE_ID)return;
-  var body=Object.assign({_subject:'New Tierscope lead: '+lead.company+' ('+lead.score+'/100)',_replyto:lead.email},lead);
-  fetch('https://formspree.io/f/'+encodeURIComponent(FORMSPREE_ID),{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)})
-    .catch(function(){/* the visitor still gets their report if sending fails */});
+  fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lead),keepalive:true})
+    .catch(function(){/* the visitor still gets their report if saving fails */});
 }
 document.getElementById('openReport').addEventListener('click',function(){openReport(current);});
 
