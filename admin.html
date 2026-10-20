@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tierscope leads</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF;--canvas:#F1F3F0;--ink:#121614;--muted:#575E5A;--hair:#D9DDD8;
+  --green:#0B6E4F;--green-dark:#08513A;--mint:#D8EFE4;--amber:#8F4405;--amber-tint:#FCEDD0;--red:#B42318;
+  --mono:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--ink);font-family:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,p{margin:0}
+a{color:var(--green)}
+:focus-visible{outline:3px solid #2E9C74;outline-offset:2px}
+[hidden]{display:none!important}
+.container{max-width:1320px;margin:0 auto;padding-inline:24px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.nav{background:#fff;border-bottom:2px solid var(--ink)}
+.nav .container{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;font-weight:800;font-size:20px;letter-spacing:-.03em}
+.brand small{font:500 13px var(--mono);color:var(--muted);letter-spacing:0}
+.acts{display:flex;gap:8px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 16px;border:2px solid var(--ink);border-radius:0;background:#fff;color:var(--ink);font:600 14px/1 'Geist',system-ui,sans-serif;cursor:pointer}
+.btn:hover{background:var(--ink);color:#fff}
+.btn-primary{background:var(--green);border-color:var(--green);color:#fff;min-height:48px;padding:0 22px;font-size:16px}
+.btn-primary:hover{background:var(--green-dark);border-color:var(--green-dark)}
+.input{min-height:48px;width:100%;padding:0 14px;border:2px solid var(--ink);border-radius:0;font:500 16px 'Geist',system-ui,sans-serif;background:#fff;color:var(--ink)}
+.input:focus{outline:none;box-shadow:4px 4px 0 var(--green)}
+.err{color:var(--red);font-weight:500;margin-top:10px}
+
+.login{max-width:420px;margin:72px auto;background:#fff;border:2px solid var(--ink);box-shadow:8px 8px 0 var(--green);padding:28px}
+.login h1{font-size:30px;letter-spacing:-.03em;font-weight:800}
+.login p{color:var(--muted);margin:6px 0 20px}
+.login .row{display:flex;gap:0}
+.login .row .btn{margin-left:-2px}
+
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:32px 0 16px}
+.head h1{font-size:36px;letter-spacing:-.04em;font-weight:800;line-height:1}
+.head .count{font:500 14px var(--mono);color:var(--muted);margin-left:10px}
+.head label{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.select{min-height:38px;padding:0 10px;border:2px solid var(--ink);border-radius:0;background:#fff;font:500 14px 'Geist',system-ui,sans-serif;color:var(--ink)}
+
+.sheet{background:#fff;border:2px solid var(--ink);overflow-x:auto;margin-bottom:48px}
+table{width:100%;min-width:1060px;border-collapse:collapse}
+th{font:500 12px var(--mono);color:var(--muted);text-align:left;padding:10px 12px;border-bottom:2px solid var(--ink);white-space:nowrap;background:#fff}
+td{padding:12px;border-bottom:1px solid var(--hair);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.mono{font-family:var(--mono);font-size:13px}
+.nowrap{white-space:nowrap}
+.tag{display:inline-block;font:600 12px var(--mono);padding:2px 8px;white-space:nowrap}
+.tag-yes{background:var(--mint);color:var(--green-dark)}
+.tag-no{background:#ECEEEB;color:var(--muted)}
+td .select{width:140px}
+td .select[data-status="new"]{box-shadow:inset 4px 0 0 #7E8782}
+td .select[data-status="contacted"],td .select[data-status="followed_up"]{box-shadow:inset 4px 0 0 #C2690A}
+td .select[data-status="replied"],td .select[data-status="meeting"]{box-shadow:inset 4px 0 0 #2E9C74}
+td .select[data-status="won"]{box-shadow:inset 4px 0 0 var(--green);font-weight:700}
+td .select[data-status="lost"]{box-shadow:inset 4px 0 0 var(--red)}
+textarea.notes{width:220px;min-height:52px;padding:6px 8px;border:1.5px solid var(--hair);border-radius:0;font:400 14px/1.4 'Geist',system-ui,sans-serif;color:var(--ink);resize:vertical}
+textarea.notes:focus{outline:none;border-color:var(--ink);box-shadow:3px 3px 0 var(--green)}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:10;background:var(--ink);color:#fff;padding:10px 16px;font-weight:500;font-size:14px;max-width:calc(100vw - 32px)}
+.toast.bad{background:var(--red)}
+
+@media (max-width:640px){
+  .container{padding-inline:16px}
+  .login{margin:32px auto;padding:22px;box-shadow:5px 5px 0 var(--green)}
+  .login .row{flex-direction:column}
+  .login .row .btn{margin:-2px 0 0}
+  .head h1{font-size:28px}
+  /* one card per lead instead of a wide table */
+  .sheet{overflow-x:visible}
+  table{min-width:0}
+  thead{display:none}
+  tr{display:block;padding:14px 16px;border-bottom:1px solid var(--hair)}
+  tr:last-child{border-bottom:0}
+  td{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;padding:5px 0;border:0;overflow-wrap:anywhere}
+  td::before{content:attr(data-label);font:500 12px var(--mono);color:var(--muted);padding-top:3px}
+  td .select,textarea.notes{width:100%}
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container">
+    <a class="brand" href="/">
+      <svg width="26" height="26" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" fill="#0B6E4F"/><rect x="6" y="15" width="4" height="7" fill="#fff"/><rect x="12" y="10" width="4" height="12" fill="#fff"/><rect x="18" y="5" width="4" height="17" fill="#9FE0C4"/></svg>
+      Tierscope <small>team only</small>
+    </a>
+    <div class="acts" id="acts" hidden>
+      <button type="button" class="btn" id="refresh">Refresh</button>
+      <button type="button" class="btn" id="logout">Log out</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <form class="login" id="login" novalidate>
+    <h1>Leads</h1>
+    <p>Private page for the Tierscope team.</p>
+    <label class="sr" for="pw">Admin password</label>
+    <div class="row">
+      <input class="input" id="pw" type="password" placeholder="Admin password" autocomplete="current-password" required>
+      <button class="btn btn-primary" type="submit">Open</button>
+    </div>
+    <p class="err" id="loginErr" hidden></p>
+  </form>
+
+  <section id="app" hidden>
+    <div class="head">
+      <h1>Leads<span class="count" id="count"></span></h1>
+      <label>Show <select class="select" id="filter"><option value="">All statuses</option></select></label>
+    </div>
+    <div class="sheet">
+      <table>
+        <thead><tr><th>Date</th><th>Lead</th><th>Pricing check</th><th>Consent</th><th>Status</th><th>Notes</th><th>Emails</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p class="empty" id="empty" hidden></p>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+
+var STATUSES=[['new','New'],['contacted','Contacted'],['followed_up','Followed up'],['replied','Replied'],['meeting','Meeting'],['won','Won'],['lost','Lost']];
+var KEY='tierscope_admin';
+var leads=[],password='';
+
+var $=function(id){return document.getElementById(id);};
+function el(tag,props,kids){
+  var n=document.createElement(tag);
+  if(props)Object.keys(props).forEach(function(k){if(k==='text')n.textContent=props[k];else if(k==='class')n.className=props[k];else n.setAttribute(k,props[k]);});
+  (kids||[]).forEach(function(k){if(k)n.appendChild(k);});
+  return n;
+}
+function store(v){try{if(v)sessionStorage.setItem(KEY,v);else sessionStorage.removeItem(KEY);}catch(e){}}
+function stored(){try{return sessionStorage.getItem(KEY)||'';}catch(e){return '';}}
+
+var toastTimer=null;
+function toast(msg,bad){
+  var t=$('toast');t.textContent=msg;t.className='toast'+(bad?' bad':'');t.hidden=false;
+  clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.hidden=true;},bad?5000:1800);
+}
+
+function api(method,body){
+  return fetch('/api/admin/leads',{method:method,headers:{'Authorization':'Bearer '+password,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined})
+    .then(function(r){return r.json().catch(function(){return {};}).then(function(j){if(!r.ok){var e=new Error(j.error||'Something went wrong');e.status=r.status;throw e;}return j;});});
+}
+
+function showLogin(msg){
+  $('app').hidden=true;$('acts').hidden=true;$('login').hidden=false;
+  $('loginErr').textContent=msg||'';$('loginErr').hidden=!msg;
+  $('pw').value='';$('pw').focus();
+}
+// typed: the password was just entered in the form (not remembered from earlier in this tab)
+function load(typed){
+  return api('GET').then(function(j){
+    leads=j.leads||[];
+    $('login').hidden=true;$('app').hidden=false;$('acts').hidden=false;
+    render();
+  }).catch(function(e){
+    if(e.status===401){store('');password='';showLogin(typed?'Wrong password. Try again.':'Log in again.');}
+    else if(!$('app').hidden)toast(e.message,true);
+    else showLogin(e.message);
+  });
+}
+
+function fmtDate(iso){
+  if(!iso)return '';
+  var d=new Date(iso);
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+', '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+function siteLink(url){
+  var u=String(url||'');
+  if(!/^[a-z0-9.-]+\.[a-z]{2,}(\/[^\s"'<>]*)?$/i.test(u))return el('span',{text:u||'–'});
+  return el('a',{href:'https://'+u,target:'_blank',rel:'noopener noreferrer',text:u});
+}
+
+function row(lead){
+  var a=lead.answers||{};
+  var status=el('select',{class:'select','aria-label':'Status for '+lead.email,'data-status':lead.status});
+  STATUSES.forEach(function(s){var o=el('option',{value:s[0],text:s[1]});if(s[0]===lead.status)o.selected=true;status.appendChild(o);});
+  status.addEventListener('change',function(){
+    var before=lead.status,next=status.value;
+    status.disabled=true;
+    api('PATCH',{id:lead.id,status:next}).then(function(j){
+      lead.status=j.lead.status;status.setAttribute('data-status',lead.status);toast('Status saved');
+      if($('filter').value&&$('filter').value!==lead.status)render();
+    }).catch(function(e){status.value=before;toast('Not saved: '+e.message,true);if(e.status===401)showLogin('Your session ended. Log in again.');})
+      .then(function(){status.disabled=false;});
+  });
+
+  var notes=el('textarea',{class:'notes','aria-label':'Notes for '+lead.email,placeholder:'Add a note'});
+  notes.value=lead.notes||'';
+  notes.addEventListener('change',function(){
+    var before=lead.notes||'';
+    api('PATCH',{id:lead.id,notes:notes.value}).then(function(j){lead.notes=j.lead.notes;toast('Note saved');})
+      .catch(function(e){notes.value=before;toast('Not saved: '+e.message,true);});
+  });
+
+  var check=[siteLink(a.url)];
+  var facts=[];
+  if(a.score!=null)facts.push('Score '+a.score+'/100');
+  if(a.revenue_gap)facts.push('Gap '+a.revenue_gap);
+  if(facts.length)check.push(el('div',{class:'small',text:facts.join(' · ')}));
+  if(a.category)check.push(el('div',{class:'small muted',text:a.category+(a.report_id?' · report #'+a.report_id:'')}));
+
+  var emails=lead.last_email_at
+    ?[el('div',{class:'small',text:'Last: '+fmtDate(lead.last_email_at)}),el('div',{class:'small muted',text:lead.follow_ups+' follow-up'+(lead.follow_ups===1?'':'s')})]
+    :[el('span',{class:'small muted',text:'None sent yet'})];
+
+  // each cell holds its content in one wrapper, so the phone layout can put a label beside it
+  function cell(label,kids,cls){return el('td',{'data-label':label,class:cls||''},[el('div',null,kids)]);}
+  return el('tr',null,[
+    cell('Date',[el('span',{text:fmtDate(lead.created_at)})],'mono nowrap'),
+    cell('Lead',[el('a',{href:'mailto:'+lead.email,text:lead.email}),a.company?el('div',{class:'small muted',text:a.company}):null]),
+    cell('Pricing check',check),
+    cell('Consent',[el('span',{class:'tag '+(lead.consent?'tag-yes':'tag-no'),text:lead.consent?'Yes':'No'})]),
+    cell('Status',[status]),
+    cell('Notes',[notes]),
+    cell('Emails',emails)
+  ]);
+}
+
+function render(){
+  var f=$('filter').value;
+  var shown=leads.filter(function(l){return !f||l.status===f;});
+  var body=$('rows');body.textContent='';
+  shown.forEach(function(l){body.appendChild(row(l));});
+  $('count').textContent=f?shown.length+' of '+leads.length:String(leads.length);
+  $('empty').hidden=shown.length>0;
+  $('empty').textContent=leads.length?'No leads with this status.':'No leads yet. They appear here when a visitor unlocks a report.';
+}
+
+STATUSES.forEach(function(s){$('filter').appendChild(el('option',{value:s[0],text:s[1]}));});
+$('filter').addEventListener('change',render);
+$('login').addEventListener('submit',function(e){
+  e.preventDefault();
+  password=$('pw').value;
+  if(!password){$('loginErr').textContent='Enter the admin password.';$('loginErr').hidden=false;return;}
+  store(password);load(true);
+});
+$('refresh').addEventListener('click',function(){load().then(function(){if(!$('app').hidden)toast('Up to date');});});
+$('logout').addEventListener('click',function(){store('');password='';leads=[];$('rows').textContent='';showLogin();});
+
+password=stored();
+if(password)load();else showLogin();
+})();
+</script>
+</body>
+</html>
