@@ -1,8 +1,11 @@
-// GET /api/admin/leads: every lead, newest first.
+// GET /api/admin/leads: every lead, newest first, with its emails and its ranking.
+//   ?sample=1 returns fake leads for demos instead, without touching the database.
 // PATCH /api/admin/leads: change one lead's status or notes. Body: { id, status?, notes? }
 // Both need the admin password, checked here on the server.
 import { isAdmin } from '../_lib/auth.js';
 import { supabase, readJson } from '../_lib/supabase.js';
+import { rankLead } from '../_lib/rank.js';
+import { sampleLeads } from '../_lib/sample.js';
 
 const STATUSES = ['new', 'contacted', 'followed_up', 'replied', 'meeting', 'won', 'lost'];
 const COLUMNS = 'id,created_at,name,email,consent,answers,status,notes,last_email_at,follow_ups';
@@ -18,8 +21,17 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const leads = await supabase(`leads?select=${COLUMNS}&order=created_at.desc&limit=1000`);
-      return res.status(200).json({ leads });
+      const now = Date.now();
+      const sample = new URL(req.url, 'http://localhost').searchParams.get('sample') === '1';
+      const rows = sample
+        ? sampleLeads(now)
+        : await supabase(`leads?select=${COLUMNS},emails(id,direction,subject,body,sent_at)&order=created_at.desc&limit=1000`);
+      const leads = rows.map((lead) => ({
+        ...lead,
+        emails: (lead.emails || []).sort((a, b) => String(b.sent_at).localeCompare(String(a.sent_at))),
+        rank: rankLead(lead, now),
+      }));
+      return res.status(200).json({ leads, sample });
     }
 
     if (req.method === 'PATCH') {
@@ -40,7 +52,7 @@ export default async function handler(req, res) {
         prefer: 'return=representation',
       });
       if (!rows.length) return res.status(404).json({ error: 'Unknown lead' });
-      return res.status(200).json({ lead: rows[0] });
+      return res.status(200).json({ lead: { ...rows[0], rank: rankLead(rows[0]) } });
     }
 
     res.setHeader('Allow', 'GET, PATCH');

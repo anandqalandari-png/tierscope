@@ -38,6 +38,8 @@ Today the report is simulated in the browser from the URL (`index.html`): compan
 
 Tierscope is a static site: the page is `index.html` at the root, server routes go in `/api`. The private CRM page is
 `admin.html` (served at `/admin`) with its route `api/admin/leads.js`; shared server helpers live in `api/_lib/`.
+The CRM ranks leads from 0 to 100 with the rules in `api/_lib/rank.js` (from "A good lead for us" above), and its
+"Sample data" switch shows fake leads from `api/_lib/sample.js` that are never saved.
 
 **Back-end rules**: the browser never talks to Supabase or Gmail, every read and write goes through our server routes.
 `/admin` is protected by `ADMIN_PASSWORD`, checked on the server. The robot is a server route called by Vercel Cron,
