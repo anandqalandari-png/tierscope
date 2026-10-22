@@ -5,14 +5,19 @@ import { EMAIL_1, fill } from './texts.js';
 
 export const geminiDeps = { fetch: (...a) => fetch(...a) }; // tests swap this
 
-function facts(lead) {
+// The lead's answers as Gemini sees them, fenced in <lead_answers> tags so they read as data, not instructions.
+// < and > are removed from the answers, so an answer can't close the tags itself.
+export function facts(lead) {
   const a = lead.answers || {};
+  const given = (v) => (v == null || String(v).trim() === '' ? 'not given' : String(v).replace(/[<>]/g, ''));
   return [
-    `Company: ${a.company || 'unknown'}`,
-    `Pricing page: ${a.url || 'unknown'}`,
-    `Software category: ${a.category || 'unknown'}`,
-    `Pricing score: ${a.score != null ? a.score + '/100' : 'unknown'}`,
-    `Estimated revenue gap per year: ${a.revenue_gap || 'unknown'}`,
+    '<lead_answers>',
+    `Company: ${given(a.company)}`,
+    `Pricing page: ${given(a.url)}`,
+    `Software category: ${given(a.category)}`,
+    `Pricing score: ${a.score != null ? given(a.score) + '/100' : 'not given'}`,
+    `Estimated revenue gap per year: ${given(a.revenue_gap)}`,
+    '</lead_answers>',
   ].join('\n');
 }
 
@@ -38,7 +43,7 @@ export async function writeEmail1(lead) {
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
         signal: AbortSignal.timeout(10000),
         body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: `${BRIEF}\n\nThe lead's answers:\n${facts(lead)}` }] }],
+          contents: [{ role: 'user', parts: [{ text: `${BRIEF}\n\nThe lead's answers, typed into our web form:\n${facts(lead)}` }] }],
           generationConfig: {
             temperature: 0.6,
             responseMimeType: 'application/json',
