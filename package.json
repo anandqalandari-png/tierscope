@@ -1,5 +1,9 @@
 {
   "name": "tierscope",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "imapflow": "2.2.5",
+    "nodemailer": "10.0.15"
+  }
 }
