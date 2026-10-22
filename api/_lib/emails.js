@@ -1,7 +1,7 @@
 // Email 1, the daily limit, and saving every email in the emails table (AGENTS.md, Emails).
 import { supabase } from './supabase.js';
 import { sendEmail, gmailReady } from './mailer.js';
-import { EMAIL_1, email1Ready, fill } from './texts.js';
+import { writeEmail1 } from './gemini.js';
 
 export const DAILY_LIMIT = 100;
 
@@ -21,12 +21,12 @@ export function saveEmail(row) {
 export function email1Blocked(lead) {
   if (!lead.consent) return 'This lead did not agree to emails';
   if (lead.status !== 'new' || lead.last_email_at) return 'Email 1 was already sent';
-  if (!email1Ready()) return 'The email 1 text is not written yet';
   if (!gmailReady()) return 'Gmail is not connected';
   return '';
 }
 
-// Sends email 1 to one lead. Returns { sent: true } or { sent: false, reason }.
+// Sends email 1 to one lead, written by Gemini (or the fallback text).
+// Returns { sent: true, source } or { sent: false, reason }.
 export async function sendEmail1(lead) {
   const blocked = email1Blocked(lead);
   if (blocked) return { sent: false, reason: blocked };
@@ -40,10 +40,9 @@ export async function sendEmail1(lead) {
   });
   if (!claimed.length) return { sent: false, reason: 'Email 1 was already sent' };
 
-  const subject = fill(EMAIL_1.subject, lead);
-  const text = fill(EMAIL_1.body, lead);
-  let mail;
+  let mail, subject, text, source;
   try {
+    ({ subject, body: text, source } = await writeEmail1(lead));
     mail = await sendEmail({ to: lead.email, subject, text });
   } catch (err) {
     // Not sent: put the lead back so email 1 can be tried again.
@@ -52,5 +51,5 @@ export async function sendEmail1(lead) {
   }
   await saveEmail({ lead_id: lead.id, direction: 'out', subject, body: text, message_id: mail.messageId, sent_at: mail.sentAt });
   await supabase(`leads?id=eq.${lead.id}`, { method: 'PATCH', body: { last_email_at: mail.sentAt } });
-  return { sent: true };
+  return { sent: true, source };
 }

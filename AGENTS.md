@@ -54,6 +54,7 @@ which refuses any call without `Authorization: Bearer <CRON_SECRET>`.
 | `ADMIN_PASSWORD` | We choose it, you set it | Login of `/admin`. |
 | `CRON_SECRET` | You generate it (long random text) | Vercel sends it to the robot route. |
 | `FOLLOW_UP_DAYS` | You, 3 by default | Days without reply before the follow-up; 0 to test. |
+| `GEMINI_API_KEY` | We create it in Google AI Studio, you set it | Gemini writes email 1. |
 
 `.env.local` stays in `.gitignore`. After changing a variable in Vercel, redeploy.
 
@@ -99,7 +100,9 @@ alter table emails enable row level security;
 - **KEEP**: sent from `"Tierscope" <GMAIL_USER>`, plain text plus a short HTML version, one line saying why the
   person receives it, only to leads with `consent = true`, at most 100 emails a day, tested on our own addresses first.
   Every email sent or received is saved in `emails`, and email 1 moves the lead to `contacted` with `last_email_at`.
-- **YOURS · Email 1**: <to be written by the team>
+- **YOURS · Email 1**: written by Gemini from the lead's answers, following the brief in `api/_lib/prompt-email1.js`
+  (`GEMINI_API_KEY`). Sent automatically after a report is unlocked with consent, or with « Send email 1 » in `/admin`.
+  If Gemini fails, the fallback text in `api/_lib/texts.js` is sent (drafted by the agent at the team's request).
 - **YOURS · The follow-up**: <to be written by the team>
 
 We write the texts: ask us for them, do not invent them.

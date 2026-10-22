@@ -82,6 +82,9 @@ button{font-family:inherit}
 .card .sub{color:var(--muted);font-size:13px;margin:2px 0 16px}
 .card h3{font-size:14px;font-weight:600;margin:20px 0 10px}
 .empty-note{color:var(--muted);font-size:14px;padding:12px 0}
+.mailbar{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;background:#fff;border:2px solid var(--ink);padding:12px 16px;margin-bottom:16px;font-size:14px}
+.mailbar .facts{display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--muted)}
+.mailbar .facts b{color:var(--ink);font-weight:600}
 
 /* bar list (funnel, tiers, categories) */
 .bars{display:grid;gap:10px}
@@ -254,6 +257,7 @@ textarea.notes:focus{outline:none;border-color:var(--ink);box-shadow:3px 3px 0 v
 
     <section id="overview" role="tabpanel" aria-labelledby="tab-overview">
       <div class="head"><h1>Overview</h1><span class="small muted" id="asOf"></span></div>
+      <div class="mailbar" id="mailbar" hidden></div>
       <div class="kpis" id="kpis"></div>
       <div class="grid">
         <article class="card">
@@ -408,6 +412,7 @@ function load(typed){
     $('asOf').textContent='Updated '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+(sampleMode?' · sample data':'');
     fillCategoryFilter();
     renderAll();
+    loadMailStatus();
     if(openId){var l=find(openId);if(l)renderDrawer(l);else closeDrawer();}
   }).catch(function(e){
     if(e.status===401){store(PW_KEY,'');password='';showLogin(typed?'Wrong password. Try again.':'Log in again.');}
@@ -446,6 +451,33 @@ function statusSelect(lead,label){
   s.addEventListener('click',function(e){e.stopPropagation();});
   s.addEventListener('change',function(){s.disabled=true;save(lead,{status:s.value},'Status saved');});
   return s;
+}
+
+/* ---------- email status (Gmail + Gemini) ---------- */
+function mailApi(method,body){
+  return fetch('/api/admin/email',{method:method,headers:{'Authorization':'Bearer '+password,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined})
+    .then(function(r){return r.json().catch(function(){return {};}).then(function(j){if(!r.ok){var e=new Error(j.error||'Something went wrong');e.status=r.status;throw e;}return j;});});
+}
+function loadMailStatus(){
+  var bar=$('mailbar');
+  if(sampleMode){bar.hidden=true;return;}
+  mailApi('GET').then(function(m){
+    bar.textContent='';
+    var test=el('button',{type:'button',class:'btn',text:'Send test email'});
+    test.addEventListener('click',function(){
+      test.disabled=true;test.textContent='Sending…';
+      mailApi('POST',{action:'test'}).then(function(j){toast(j.message);},function(e){toast('Test failed: '+e.message,true);})
+        .then(function(){test.disabled=false;test.textContent='Send test email';});
+    });
+    bar.appendChild(el('div',{class:'facts'},[
+      el('span',null,['Gmail: ',el('b',{text:m.gmail||'not connected'})]),
+      el('span',null,['Gemini: ',el('b',{text:m.gemini?'writes email 1':'not set up (fallback text)'})]),
+      el('span',null,['Email 1: ',el('b',{text:m.auto?'sent automatically when consent is ticked':'sent with the button on each lead'})]),
+      el('span',null,['Sent today: ',el('b',{text:m.sentToday+' of '+m.dailyLimit})])
+    ]));
+    if(m.gmail)bar.appendChild(test);
+    bar.hidden=false;
+  }).catch(function(){bar.hidden=true;});
 }
 
 /* ---------- overview ---------- */
@@ -705,7 +737,16 @@ function renderDrawer(l){
   copy.addEventListener('click',function(){
     (navigator.clipboard?navigator.clipboard.writeText(l.email):Promise.reject()).then(function(){toast('Email copied');},function(){toast('Copy failed: select it by hand',true);});
   });
-  var acts=[el('a',{class:'btn btn-primary',href:'mailto:'+l.email,text:'Email them'}),copy];
+  var acts=[el('a',{class:'btn'+(l.status==='new'&&l.consent?'':' btn-primary'),href:'mailto:'+l.email,text:'Email them'}),copy];
+  if(l.status==='new'&&l.consent&&!l.last_email_at){
+    var send1=el('button',{type:'button',class:'btn btn-primary',text:sampleMode?'Send email 1 (off with sample data)':'Send email 1'});
+    if(sampleMode)send1.disabled=true;
+    send1.addEventListener('click',function(){
+      send1.disabled=true;send1.textContent='Gemini is writing…';
+      mailApi('POST',{action:'send-email1',id:l.id}).then(function(j){toast(j.message);return load();},function(e){toast('Not sent: '+e.message,true);send1.disabled=false;send1.textContent='Send email 1';});
+    });
+    acts.unshift(send1);
+  }
   if(/^[a-z0-9.-]+\.[a-z]{2,}(\/[^\s"'<>]*)?$/i.test(String(a.url||'')))acts.push(el('a',{class:'btn',href:'https://'+a.url,target:'_blank',rel:'noopener noreferrer',text:'Open pricing page'}));
   d.appendChild(el('section',{class:'d-sec'},[el('h3',{text:'Next step'}),
     el('div',{class:'d-row'},[el('label',{class:'small muted',for:'dStatus',text:'Status'}),(function(){var s=statusSelect(l,'Status');s.id='dStatus';return s;})()]),

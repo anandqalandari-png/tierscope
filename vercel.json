@@ -1,3 +1,7 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "functions": {
+    "api/leads.js": { "maxDuration": 60 },
+    "api/admin/email.js": { "maxDuration": 60 }
+  }
 }

@@ -1,6 +1,8 @@
 // POST /api/leads: saves a lead from the landing page in Supabase.
 // The service role key stays on the server; the browser only ever calls this route.
 import { supabase, readJson } from './_lib/supabase.js';
+import { sendEmail1 } from './_lib/emails.js';
+import { SEND_EMAIL_1_AUTOMATICALLY } from './_lib/texts.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const TEXT_FIELDS = ['url', 'company', 'category', 'revenue_gap', 'report_id'];
@@ -32,16 +34,29 @@ export default async function handler(req, res) {
 
   const lead = { email, consent: body.consent === true, answers: cleanAnswers(body.answers) };
 
+  let saved;
   try {
     // Same email again: update consent and answers, keep status and history.
-    await supabase('leads?on_conflict=email', {
+    const rows = await supabase('leads?on_conflict=email', {
       method: 'POST',
       body: lead,
-      prefer: 'resolution=merge-duplicates,return=minimal',
+      prefer: 'resolution=merge-duplicates,return=representation',
     });
+    saved = Array.isArray(rows) ? rows[0] : null;
   } catch (err) {
     console.error('leads:', err.message);
     return res.status(502).json({ error: 'Could not save' });
+  }
+
+  // Email 1, written by Gemini from the answers. Only with consent, only once (sendEmail1 checks).
+  // A failure here never costs the visitor their report: the lead is saved and stays "new".
+  if (SEND_EMAIL_1_AUTOMATICALLY && saved && saved.consent && saved.status === 'new') {
+    try {
+      const r = await sendEmail1(saved);
+      console.log('leads: email 1', r.sent ? `sent (${r.source})` : `not sent: ${r.reason}`);
+    } catch (err) {
+      console.error('leads: email 1 failed:', err.message);
+    }
   }
 
   return res.status(200).json({ ok: true });

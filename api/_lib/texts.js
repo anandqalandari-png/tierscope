@@ -1,10 +1,18 @@
-// The words of the emails. AGENTS.md: the team writes them, the agent never invents them.
+// The fixed words of the emails. Email 1 is normally written by Gemini (see prompt-email1.js);
+// EMAIL_1 below is the fallback, sent when Gemini is unavailable. Drafted by the agent at the team's request.
 // In the subject and bodies, {company}, {url}, {score} and {revenue_gap} become the lead's answers.
-// Nothing is sent to a lead until the text it needs is filled in (the CRM's test email always works).
 
 export const EMAIL_1 = {
-  subject: '',
-  body: ``,
+  subject: 'Your Tierscope pricing report for {company}',
+  body: `Hi,
+
+Thanks for checking the pricing of {company} with Tierscope.
+
+Your pricing score is {score}/100, and we estimate a revenue gap of {revenue_gap} a year compared with your closest competitors.
+
+If you want to turn that into a concrete plan, we offer a 60-minute pricing review with a pricing strategist. Just reply to this email and we will find a time.
+
+The Tierscope team`,
 };
 
 // The subject is email 1's subject with "Re: " in front, so it lands in the same thread (AGENTS.md).
@@ -21,8 +29,7 @@ export const WHY_LINE =
   'You get this email because you asked for your Tierscope pricing report and ticked the box to hear from us. ' +
   'Reply "stop" and we will not email you again.';
 
-export const email1Ready = () => EMAIL_1.subject.trim() !== '' && EMAIL_1.body.trim() !== '';
-export const followUpReady = () => email1Ready() && FOLLOW_UP.body.trim() !== '';
+export const followUpReady = () => FOLLOW_UP.body.trim() !== '';
 
 export function fill(template, lead) {
   const a = (lead && lead.answers) || {};
