@@ -4,3 +4,5 @@
 node_modules
 # The demo video is large: keep it out of git (it lives in presentation/ locally)
 presentation/*.mp4
+# The final deck embeds the video (20 MB): keep it out of git too
+presentation/Tierscope Deck.html
