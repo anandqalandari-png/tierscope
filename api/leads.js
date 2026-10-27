@@ -48,9 +48,10 @@ export default async function handler(req, res) {
     return res.status(502).json({ error: 'Could not save' });
   }
 
-  // Email 1, written by Gemini from the answers. Only with consent, only once (sendEmail1 checks).
-  // A failure here never costs the visitor their report: the lead is saved and stays "new".
-  if (SEND_EMAIL_1_AUTOMATICALLY && saved && saved.consent && saved.status === 'new') {
+  // Email 1, written by Gemini from these answers, every time a report is unlocked with consent
+  // (team decision). sendEmail1 checks consent, "lost" leads and the sending limits.
+  // A failure here never costs the visitor their report: the lead is saved either way.
+  if (SEND_EMAIL_1_AUTOMATICALLY && saved && saved.consent) {
     try {
       const r = await sendEmail1(saved);
       console.log('leads: email 1', r.sent ? `sent (${r.source})` : `not sent: ${r.reason}`);

@@ -1,14 +1,14 @@
 // Gemini writes email 1 from the lead's answers. Called over Google's REST API (no extra library).
 // If Gemini fails, is slow, or returns something unusable, the fixed fallback email is used instead.
 import { BRIEF, MODELS } from './prompt-email1.js';
-import { EMAIL_1, fill } from './texts.js';
+import { fallbackEmail1, safeAnswers } from './texts.js';
 
 export const geminiDeps = { fetch: (...a) => fetch(...a) }; // tests swap this
 
-// The lead's answers as Gemini sees them, fenced in <lead_answers> tags so they read as data, not instructions.
-// < and > are removed from the answers, so an answer can't close the tags itself.
+// The lead's answers as Gemini sees them: cleaned first (safeAnswers drops anything that isn't a real answer),
+// then fenced in <lead_answers> tags so they read as data, not instructions.
 export function facts(lead) {
-  const a = lead.answers || {};
+  const a = safeAnswers(lead.answers);
   const given = (v) => (v == null || String(v).trim() === '' ? 'not given' : String(v).replace(/[<>]/g, ''));
   return [
     '<lead_answers>',
@@ -22,15 +22,19 @@ export function facts(lead) {
 }
 
 export function fallbackEmail(lead) {
-  return { subject: fill(EMAIL_1.subject, lead), body: fill(EMAIL_1.body, lead), source: 'fallback' };
+  return { ...fallbackEmail1(lead), source: 'fallback' };
 }
 
-// A usable email: a short subject, a body of reasonable length, nothing left to fill in.
-function usable(e) {
-  return e && typeof e.subject === 'string' && typeof e.body === 'string'
-    && e.subject.trim().length >= 5 && e.subject.length <= 120
+// A usable email: a short subject, a body of reasonable length, nothing left to fill in, and no link,
+// web address or discount (if Gemini was talked into one, the safe fallback is sent instead).
+export function usable(e) {
+  if (!e || typeof e.subject !== 'string' || typeof e.body !== 'string') return false;
+  const all = e.subject + '\n' + e.body;
+  return e.subject.trim().length >= 5 && e.subject.length <= 120 && !/[\r\n]/.test(e.subject.trim())
     && e.body.trim().length >= 150 && e.body.length <= 2500
-    && !/[{}]|\[(name|company)\]/i.test(e.subject + e.body);
+    && !/[{}<>]|\[(name|company)\]/i.test(all)
+    && !/https?:|www\.|@|[a-z0-9-]+\.(com|io|co|app|net|org|biz|ai|dev|fr|de|uk|xyz|info|me)\b/i.test(all)
+    && !/discount|% off|coupon|free (month|trial)/i.test(all);
 }
 
 export async function writeEmail1(lead) {

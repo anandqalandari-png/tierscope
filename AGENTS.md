@@ -98,15 +98,25 @@ alter table emails enable row level security;
 ## Emails · KEEP the settings, YOURS the words
 
 - **KEEP**: sent from `"Tierscope" <GMAIL_USER>`, plain text plus a short HTML version, one line saying why the
-  person receives it, only to leads with `consent = true`, at most 100 emails a day, tested on our own addresses first.
+  person receives it, only to leads with `consent = true`, tested on our own addresses first.
   Every email sent or received is saved in `emails`, and email 1 moves the lead to `contacted` with `last_email_at`.
+- **KEEP · Gmail safety limits** (`api/_lib/emails.js`): 100 emails a day, 30 an hour, 5 a day to one address
+  (team decision, 27 Oct 2026), 1 minute between two emails to one address. A `lost` lead is never emailed again.
+  What visitors type is cleaned by `safeAnswers` (`api/_lib/texts.js`) before it reaches any email: a company name
+  that isn't a plain name is replaced by the name in the URL, odd scores or gaps are dropped. An email from Gemini
+  with a link, web address or discount is refused and the fallback is sent instead.
+- **Email 1 goes again every time a report is unlocked with consent** (team decision, 27 Oct 2026), also for an
+  address already in the CRM: one row per address, every email in its history, status back to `contacted` (a
+  `replied`, `meeting` or `won` status is kept) and `follow_ups` back to 0, so each email 1 gets its own follow-up.
 - **YOURS · Email 1**: written by Gemini from the lead's answers, following the brief in `api/_lib/prompt-email1.js`
   (`GEMINI_API_KEY`). Sent automatically after a report is unlocked with consent, or with « Send email 1 » in `/admin`.
   If Gemini fails, the fallback text in `api/_lib/texts.js` is sent (drafted by the agent at the team's request).
 - **YOURS · The follow-up**: one email, 1 day after email 1, same subject with « Re: », text in `FOLLOW_UP` in
-  `api/_lib/texts.js` (agent's draft, approved by the team on 27 Oct 2026). Only for leads that arrived from 27 Oct 2026.
+  `api/_lib/texts.js` (agent's draft, approved by the team on 27 Oct 2026). Only for an email 1 sent from 27 Oct 2026.
 - **« Send email »** in `/admin`, next to each lead's status: sends email 1 at once from Gmail (never the Mac mail
-  app), for a lead the automatic send missed. Leads without consent show « No consent » instead.
+  app); « Send email again » once a lead had one. Leads without consent show « No consent », lost leads « No more emails ».
+- **Fallback email 1**: when an answer is missing, the sentences in `EMAIL_1_MISSING` replace the ones that need it,
+  so the fallback never has a blank.
 
 We write the texts: ask us for them, do not invent them.
 
@@ -115,14 +125,15 @@ We write the texts: ask us for them, do not invent them.
 Team decision (27 Oct 2026): **one** follow-up, `FOLLOW_UP_DAYS` (1) days after email 1, **without checking replies**.
 Code: `api/robot.js` (route) and `api/_lib/followup.js` (rules). At every run:
 
-1. Take the leads that are due: `status = 'contacted'`, `consent = true`, `follow_ups = 0`, `created_at` on or after
-   `FOLLOW_UP_START` (27 Oct 2026: earlier leads never get a follow-up), `last_email_at` older than `FOLLOW_UP_DAYS`.
+1. Take the leads that are due: `status = 'contacted'`, `consent = true`, `follow_ups = 0`, `last_email_at` on or
+   after `FOLLOW_UP_START` (27 Oct 2026: an email 1 sent earlier never gets a follow-up) and older than `FOLLOW_UP_DAYS`.
 2. Send **one** follow-up in the same thread (same subject with « Re: »), save it in `emails`, set
    `status = 'followed_up'`, `follow_ups = 1`, `last_email_at = now()`. The lead is claimed before sending, so it is
    never sent twice; if Gmail fails, the lead is put back for the next run.
 3. Replies are not read. A lead the team moves to `replied`, `meeting`, `won` or `lost` in `/admin` is skipped: that is
    how a « stop » or a booking reply stops the follow-up.
-4. Never a second follow-up: running the robot twice in a row sends nothing more. At most 100 emails a day in all.
+4. Never a second follow-up for the same email 1: running the robot twice in a row sends nothing more. The Gmail
+   safety limits above apply to follow-ups too.
 5. Return a summary: leads checked, follow-ups sent, skipped (with the reason), errors.
 
 Scheduled once a day in `vercel.json` (`"schedule": "0 7 * * *"` is 7:00 UTC, 9:00 in Paris), with « Run robot now »

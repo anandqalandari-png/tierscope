@@ -28,7 +28,7 @@ export async function sendEmail({ to, subject, text, inReplyTo, why = true }) {
   const info = await mailDeps.transport.sendMail({
     from: { name: 'Tierscope', address: process.env.GMAIL_USER },
     to,
-    subject,
+    subject: String(subject).replace(/[\r\n]+/g, ' ').slice(0, 150), // one line, so no extra headers can sneak in
     text: why ? `${body}\n\n--\n${WHY_LINE}\n` : `${body}\n`,
     html: toHtml(body, why ? WHY_LINE : ''),
     ...(inReplyTo ? { inReplyTo, references: [inReplyTo] } : {}),

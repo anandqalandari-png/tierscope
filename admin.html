@@ -462,20 +462,22 @@ function statusSelect(lead,label){
 
 /* ---------- email status (Gmail + Gemini) ---------- */
 // "Send email": Gemini writes email 1 and the server sends it from Gmail at once (no mail app).
+// Shown for every lead who agreed to emails; "Send email again" once they had one. Limits are checked on the server.
 function sendEmailButton(l,cls){
-  if(l.last_email_at||l.status!=='new')return null;
   if(!l.consent)return el('span',{class:'row-noconsent','data-tip':'This lead did not tick the box to hear from us, so we cannot email them',text:'No consent'});
-  var b=el('button',{type:'button',class:'btn btn-primary '+(cls||''),text:sampleMode?'Send email (off with sample data)':'Send email'});
+  if(l.status==='lost')return el('span',{class:'row-noconsent','data-tip':'Lost leads (for example they asked us to stop) get no more emails',text:'No more emails'});
+  var label=l.last_email_at?'Send email again':'Send email';
+  var b=el('button',{type:'button',class:'btn '+(l.last_email_at?'':'btn-primary ')+(cls||''),text:sampleMode?label+' (off with sample data)':label});
   if(sampleMode)b.disabled=true;
   b.addEventListener('click',function(e){
     e.stopPropagation();b.disabled=true;b.textContent='Sending…';
-    mailApi('POST',{action:'send-email1',id:l.id}).then(function(j){toast(j.message);return load();},function(err){toast('Not sent: '+err.message,true);b.disabled=false;b.textContent='Send email';});
+    mailApi('POST',{action:'send-email1',id:l.id}).then(function(j){toast(j.message);return load();},function(err){toast('Not sent: '+err.message,true);b.disabled=false;b.textContent=label;});
   });
   return b;
 }
 // The follow-up goes by itself once a day; this button sends it now, for tests.
 function canFollowUp(l){
-  return !!(mailInfo&&mailInfo.followUp&&mailInfo.followUp.ready&&l.consent&&l.status==='contacted'&&!l.follow_ups&&l.last_email_at&&new Date(l.created_at)>=new Date(mailInfo.followUp.start));
+  return !!(mailInfo&&mailInfo.followUp&&mailInfo.followUp.ready&&l.consent&&l.status==='contacted'&&!l.follow_ups&&l.last_email_at&&new Date(l.last_email_at)>=new Date(mailInfo.followUp.start));
 }
 function followUpButton(l){
   if(sampleMode||!canFollowUp(l))return null;
@@ -506,7 +508,7 @@ function loadMailStatus(){
       el('span',null,['Gmail: ',el('b',{text:m.gmail||'not connected'})]),
       el('span',null,['Gemini: ',el('b',{text:m.gemini?'writes email 1':'not set up (fallback text)'})]),
       el('span',null,['Email 1: ',el('b',{text:m.auto?'sent automatically when consent is ticked':'sent with the button on each lead'})]),
-      el('span',{'data-tip':'Sent once a day by the robot, in the same thread as email 1. Leads you mark replied, meeting, won or lost are skipped. Leads from before '+fmtDate(m.followUp.start,false)+' never get one.'},['Follow-up: ',el('b',{text:m.followUp.ready?plural(m.followUp.days,'day')+' after email 1, once':'no text yet'})]),
+      el('span',{'data-tip':'Sent once a day by the robot, in the same thread as email 1. Each new email 1 gets its own follow-up. Leads you mark replied, meeting, won or lost are skipped. Limits: '+m.limits.perAddress+' emails per address a day, '+m.limits.hourly+' an hour, '+m.dailyLimit+' a day.'},['Follow-up: ',el('b',{text:m.followUp.ready?plural(m.followUp.days,'day')+' after email 1, once':'no text yet'})]),
       el('span',null,['Sent today: ',el('b',{text:m.sentToday+' of '+m.dailyLimit})])
     ]));
     if(m.gmail){

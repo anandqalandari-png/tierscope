@@ -3,10 +3,11 @@
 // in the CRM is left alone, because only leads still "contacted" get a follow-up.
 import { supabase } from './supabase.js';
 import { sendEmail, gmailReady } from './mailer.js';
-import { saveEmail, sentToday, DAILY_LIMIT } from './emails.js';
+import { saveEmail, limitReached } from './emails.js';
 import { FOLLOW_UP, followUpReady } from './texts.js';
 
-// Only leads that arrived from this moment get a follow-up. Earlier leads never do (team decision, 27 Oct 2026).
+// Only an email 1 sent from this moment gets a follow-up. Email 1s sent earlier never do (team decision, 27 Oct 2026).
+// Each new email 1 (the address used again) gets its own follow-up: sendEmail1 sets follow_ups back to 0.
 export const FOLLOW_UP_START = '2026-10-27T00:00:00Z';
 
 export function followUpDays() {
@@ -20,7 +21,7 @@ export function followUpBlocked(lead, { now = false } = {}) {
   if (!lead.consent) return 'This lead did not agree to emails';
   if (lead.follow_ups > 0 || lead.status === 'followed_up') return 'The follow-up was already sent';
   if (lead.status !== 'contacted' || !lead.last_email_at) return lead.status === 'new' ? 'Email 1 was not sent yet' : `This lead is marked "${lead.status}"`;
-  if (!(new Date(lead.created_at) >= new Date(FOLLOW_UP_START))) return 'This lead arrived before follow-ups started';
+  if (!(new Date(lead.last_email_at) >= new Date(FOLLOW_UP_START))) return 'Email 1 was sent before follow-ups started';
   if (!gmailReady()) return 'Gmail is not connected';
   if (!now && Date.now() - new Date(lead.last_email_at).getTime() < followUpDays() * 86400000) return 'Too early for the follow-up';
   return '';
@@ -28,10 +29,11 @@ export function followUpBlocked(lead, { now = false } = {}) {
 
 // Sends the follow-up to one lead. Returns { sent: true } or { sent: false, reason }.
 export async function sendFollowUp(lead, { now = false } = {}) {
-  const blocked = followUpBlocked(lead, { now });
+  const blocked = followUpBlocked(lead, { now }) || (await limitReached(lead.id));
   if (blocked) return { sent: false, reason: blocked };
 
-  const [first] = await supabase(`emails?lead_id=eq.${lead.id}&direction=eq.out&order=sent_at.asc&limit=1&select=subject,message_id`);
+  // The latest email we sent is the email 1 this follow-up answers (follow_ups is 0, so no follow-up came after it).
+  const [first] = await supabase(`emails?lead_id=eq.${lead.id}&direction=eq.out&order=sent_at.desc&limit=1&select=subject,message_id`);
   if (!first) return { sent: false, reason: 'Email 1 was not found in the emails table' };
 
   // Claim the lead first, so the robot and a click never send two follow-ups.
@@ -65,17 +67,17 @@ export async function runRobot() {
   const cutoff = new Date(Date.now() - followUpDays() * 86400000).toISOString();
   const due = await supabase(
     'leads?select=id,email,consent,status,created_at,last_email_at,follow_ups' +
-    `&status=eq.contacted&consent=is.true&follow_ups=eq.0&created_at=gte.${encodeURIComponent(FOLLOW_UP_START)}` +
-    `&last_email_at=lte.${encodeURIComponent(cutoff)}&order=last_email_at.asc&limit=200`,
+    `&status=eq.contacted&consent=is.true&follow_ups=eq.0` +
+    `&last_email_at=gte.${encodeURIComponent(FOLLOW_UP_START)}&last_email_at=lte.${encodeURIComponent(cutoff)}&order=last_email_at.asc&limit=200`,
   );
   summary.checked = due.length;
 
-  let left = DAILY_LIMIT - (await sentToday());
   for (const lead of due) {
-    if (left <= 0) { summary.errors.push(`The daily limit of ${DAILY_LIMIT} emails is reached`); break; }
     try {
       const r = await sendFollowUp(lead);
-      if (r.sent) { summary.followUpsSent++; left--; } else summary.skipped.push(`${lead.email}: ${r.reason}`);
+      if (r.sent) summary.followUpsSent++;
+      else if (/limit of/.test(r.reason)) { summary.errors.push(r.reason); break; } // daily or hourly limit: try again tomorrow
+      else summary.skipped.push(`${lead.email}: ${r.reason}`);
     } catch (err) {
       summary.errors.push(`${lead.email}: ${err.message.replace(/\s+/g, ' ').slice(0, 160)}`);
     }

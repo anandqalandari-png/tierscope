@@ -7,7 +7,7 @@
 import { isAdmin } from '../_lib/auth.js';
 import { supabase, readJson } from '../_lib/supabase.js';
 import { sendEmail, gmailReady } from '../_lib/mailer.js';
-import { sendEmail1, sentToday, DAILY_LIMIT } from '../_lib/emails.js';
+import { sendEmail1, sentToday, DAILY_LIMIT, HOURLY_LIMIT, PER_ADDRESS_LIMIT } from '../_lib/emails.js';
 import { SEND_EMAIL_1_AUTOMATICALLY, followUpReady } from '../_lib/texts.js';
 import { sendFollowUp, runRobot, followUpDays, FOLLOW_UP_START } from '../_lib/followup.js';
 
@@ -27,6 +27,7 @@ export default async function handler(req, res) {
         sentToday: gmailReady() ? await sentToday() : 0,
         dailyLimit: DAILY_LIMIT,
         followUp: { ready: followUpReady(), days: followUpDays(), start: FOLLOW_UP_START },
+        limits: { perAddress: PER_ADDRESS_LIMIT, hourly: HOURLY_LIMIT },
       });
     }
     if (req.method !== 'POST') { res.setHeader('Allow', 'GET, POST'); return res.status(405).json({ error: 'Use GET or POST' }); }
@@ -39,7 +40,7 @@ export default async function handler(req, res) {
     }
     if (body.action === 'send-email1') {
       if (!UUID_RE.test(String(body.id || ''))) return res.status(400).json({ error: 'Unknown lead' });
-      const [lead] = await supabase(`leads?id=eq.${body.id}&select=id,email,consent,answers,status,last_email_at`);
+      const [lead] = await supabase(`leads?id=eq.${body.id}&select=id,email,consent,answers,status,last_email_at,follow_ups`);
       if (!lead) return res.status(404).json({ error: 'Unknown lead' });
       const r = await sendEmail1(lead);
       if (!r.sent) return res.status(409).json({ error: r.reason });
