@@ -1,6 +1,6 @@
 # Tierscope · 5-minute pitch
 
-For the deck `Tierscope Deck.html` (5 slides). About 720 words spoken, plus the 1:28 demo video on slide 3.
+For the deck `Tierscope Deck.html` (5 slides). About 700 words spoken, plus the 1:28 demo video on slide 3.
 Times are where you should be when each slide starts. Lines in *italics* are stage directions, not spoken.
 
 ---
