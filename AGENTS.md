@@ -53,7 +53,7 @@ which refuses any call without `Authorization: Bearer <CRON_SECRET>`.
 | `GMAIL_USER`, `GMAIL_APP_PASSWORD` | We create them in Google, you set them | SMTP and IMAP. |
 | `ADMIN_PASSWORD` | We choose it, you set it | Login of `/admin`. |
 | `CRON_SECRET` | You generate it (long random text) | Vercel sends it to the robot route. |
-| `FOLLOW_UP_DAYS` | You, 3 by default | Days without reply before the follow-up; 0 to test. |
+| `FOLLOW_UP_DAYS` | You, 1 (team decision) | Days after email 1 before the follow-up; 0 to test. |
 | `GEMINI_API_KEY` | We create it in Google AI Studio, you set it | Gemini writes email 1. |
 
 `.env.local` stays in `.gitignore`. After changing a variable in Vercel, redeploy.
@@ -103,25 +103,30 @@ alter table emails enable row level security;
 - **YOURS · Email 1**: written by Gemini from the lead's answers, following the brief in `api/_lib/prompt-email1.js`
   (`GEMINI_API_KEY`). Sent automatically after a report is unlocked with consent, or with « Send email 1 » in `/admin`.
   If Gemini fails, the fallback text in `api/_lib/texts.js` is sent (drafted by the agent at the team's request).
-- **YOURS · The follow-up**: <to be written by the team>
+- **YOURS · The follow-up**: one email, 1 day after email 1, same subject with « Re: », text in `FOLLOW_UP` in
+  `api/_lib/texts.js` (agent's draft, approved by the team on 27 Oct 2026). Only for leads that arrived from 27 Oct 2026.
+- **« Send email »** in `/admin`, next to each lead's status: sends email 1 at once from Gmail (never the Mac mail
+  app), for a lead the automatic send missed. Leads without consent show « No consent » instead.
 
 We write the texts: ask us for them, do not invent them.
 
 ## The follow-up robot · KEEP
 
-At every run:
+Team decision (27 Oct 2026): **one** follow-up, `FOLLOW_UP_DAYS` (1) days after email 1, **without checking replies**.
+Code: `api/robot.js` (route) and `api/_lib/followup.js` (rules). At every run:
 
-1. Take the waiting leads: `status` is `contacted` or `followed_up`. Never touch `replied`, `meeting`, `won`, `lost`.
-2. Over IMAP, look for an email **from** the lead's address received after `last_email_at`. IMAP `SINCE` works by
-   day: filter on the message date after fetching.
-3. Reply found: save it in `emails` (`direction = 'in'`), set `status = 'replied'`. The robot never writes to this lead again.
-4. No reply, `status = 'contacted'`, `last_email_at` older than `FOLLOW_UP_DAYS` days: send **one** follow-up
-   (same subject with « Re: »), save it, set `status = 'followed_up'`, `follow_ups = 1`, `last_email_at = now()`.
-5. Never a second follow-up, never after a reply: running the robot twice in a row sends nothing more.
-6. Return a summary: leads checked, replies found, follow-ups sent, errors.
+1. Take the leads that are due: `status = 'contacted'`, `consent = true`, `follow_ups = 0`, `created_at` on or after
+   `FOLLOW_UP_START` (27 Oct 2026: earlier leads never get a follow-up), `last_email_at` older than `FOLLOW_UP_DAYS`.
+2. Send **one** follow-up in the same thread (same subject with « Re: »), save it in `emails`, set
+   `status = 'followed_up'`, `follow_ups = 1`, `last_email_at = now()`. The lead is claimed before sending, so it is
+   never sent twice; if Gmail fails, the lead is put back for the next run.
+3. Replies are not read. A lead the team moves to `replied`, `meeting`, `won` or `lost` in `/admin` is skipped: that is
+   how a « stop » or a booking reply stops the follow-up.
+4. Never a second follow-up: running the robot twice in a row sends nothing more. At most 100 emails a day in all.
+5. Return a summary: leads checked, follow-ups sent, skipped (with the reason), errors.
 
-Scheduled once a day in `vercel.json` (`"schedule": "0 7 * * *"` is 7:00 UTC, 9:00 in Paris), with a « Run robot
-now » button in `/admin` for tests.
+Scheduled once a day in `vercel.json` (`"schedule": "0 7 * * *"` is 7:00 UTC, 9:00 in Paris), with « Run robot now »
+in `/admin` and « Send follow-up now » on a lead for tests (it skips the waiting time, not the other rules).
 
 ## Out of scope today · KEEP
 

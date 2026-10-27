@@ -1,12 +1,15 @@
 // POST /api/admin/email, admin password needed. Body:
 //   { action: 'test' }               sends a test email to the project Gmail itself
 //   { action: 'send-email1', id }    sends email 1 to one lead (Gemini text, or the fallback)
+//   { action: 'send-follow-up', id } sends the follow-up to one lead now, without waiting (for tests)
+//   { action: 'run-robot' }          runs the daily follow-up robot now
 // GET returns what is set up, for the CRM.
 import { isAdmin } from '../_lib/auth.js';
 import { supabase, readJson } from '../_lib/supabase.js';
 import { sendEmail, gmailReady } from '../_lib/mailer.js';
 import { sendEmail1, sentToday, DAILY_LIMIT } from '../_lib/emails.js';
-import { SEND_EMAIL_1_AUTOMATICALLY } from '../_lib/texts.js';
+import { SEND_EMAIL_1_AUTOMATICALLY, followUpReady } from '../_lib/texts.js';
+import { sendFollowUp, runRobot, followUpDays, FOLLOW_UP_START } from '../_lib/followup.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -23,6 +26,7 @@ export default async function handler(req, res) {
         auto: SEND_EMAIL_1_AUTOMATICALLY,
         sentToday: gmailReady() ? await sentToday() : 0,
         dailyLimit: DAILY_LIMIT,
+        followUp: { ready: followUpReady(), days: followUpDays(), start: FOLLOW_UP_START },
       });
     }
     if (req.method !== 'POST') { res.setHeader('Allow', 'GET, POST'); return res.status(405).json({ error: 'Use GET or POST' }); }
@@ -40,6 +44,19 @@ export default async function handler(req, res) {
       const r = await sendEmail1(lead);
       if (!r.sent) return res.status(409).json({ error: r.reason });
       return res.status(200).json({ ok: true, message: r.source === 'gemini' ? 'Email 1 sent, written by Gemini' : 'Email 1 sent (Gemini was busy, so the fallback text was used)' });
+    }
+    if (body.action === 'send-follow-up') {
+      if (!UUID_RE.test(String(body.id || ''))) return res.status(400).json({ error: 'Unknown lead' });
+      const [lead] = await supabase(`leads?id=eq.${body.id}&select=id,email,consent,status,created_at,last_email_at,follow_ups`);
+      if (!lead) return res.status(404).json({ error: 'Unknown lead' });
+      const r = await sendFollowUp(lead, { now: true });
+      if (!r.sent) return res.status(409).json({ error: r.reason });
+      return res.status(200).json({ ok: true, message: 'Follow-up sent' });
+    }
+    if (body.action === 'run-robot') {
+      const s = await runRobot();
+      const msg = `Robot done: ${s.checked} due, ${s.followUpsSent} follow-up${s.followUpsSent === 1 ? '' : 's'} sent` + (s.errors.length ? `, ${s.errors.length} error(s): ${s.errors[0]}` : '');
+      return res.status(200).json({ ok: true, message: msg, summary: s });
     }
     return res.status(400).json({ error: 'Unknown action' });
   } catch (err) {

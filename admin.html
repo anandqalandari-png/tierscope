@@ -46,6 +46,12 @@ button{font-family:inherit}
 .btn:hover{background:var(--ink);color:#fff}
 .btn-primary{background:var(--green);border-color:var(--green);color:#fff}
 .btn-primary:hover{background:var(--green-dark);border-color:var(--green-dark)}
+.btn:disabled{opacity:.55;cursor:default}
+.btn:disabled:hover{background:#fff;color:var(--ink)}
+.btn-primary:disabled:hover{background:var(--green);color:#fff}
+.btn-sm{min-height:30px;padding:0 10px;font-size:13px}
+.row-send{display:flex;width:136px;margin-top:6px}
+.row-noconsent{display:inline-block;margin-top:6px;font:500 12px var(--mono);color:var(--muted)}
 .btn-big{min-height:48px;padding:0 22px;font-size:16px}
 .input,.select{min-height:38px;padding:0 10px;border:2px solid var(--ink);border-radius:0;background:#fff;font:500 14px 'Geist',system-ui,sans-serif;color:var(--ink)}
 .input:focus,.select:focus{outline:none;box-shadow:3px 3px 0 var(--green)}
@@ -215,6 +221,7 @@ textarea.notes:focus{outline:none;border-color:var(--ink);box-shadow:3px 3px 0 v
   td::before{content:attr(data-label);font:500 12px var(--mono);color:var(--muted);padding-top:3px}
   tbody tr:hover td{background:none}
   td .select{width:100%}
+  .row-send{width:100%}
   .d-grid{grid-template-columns:110px minmax(0,1fr)}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -331,7 +338,7 @@ var TIER_LABEL={hot:'Hot',warm:'Warm',cold:'Cold',ignore:'Ignore'};
 var PW_KEY='tierscope_admin',SAMPLE_KEY='tierscope_admin_sample',TAB_KEY='tierscope_admin_tab';
 var DAY=86400000;
 
-var leads=[],password='',sampleMode=false,openId=null,lastFocus=null,rankedCount=0;
+var leads=[],password='',sampleMode=false,mailInfo=null,openId=null,lastFocus=null,rankedCount=0;
 
 var $=function(id){return document.getElementById(id);};
 function el(tag,props,kids){
@@ -454,6 +461,31 @@ function statusSelect(lead,label){
 }
 
 /* ---------- email status (Gmail + Gemini) ---------- */
+// "Send email": Gemini writes email 1 and the server sends it from Gmail at once (no mail app).
+function sendEmailButton(l,cls){
+  if(l.last_email_at||l.status!=='new')return null;
+  if(!l.consent)return el('span',{class:'row-noconsent','data-tip':'This lead did not tick the box to hear from us, so we cannot email them',text:'No consent'});
+  var b=el('button',{type:'button',class:'btn btn-primary '+(cls||''),text:sampleMode?'Send email (off with sample data)':'Send email'});
+  if(sampleMode)b.disabled=true;
+  b.addEventListener('click',function(e){
+    e.stopPropagation();b.disabled=true;b.textContent='Sending…';
+    mailApi('POST',{action:'send-email1',id:l.id}).then(function(j){toast(j.message);return load();},function(err){toast('Not sent: '+err.message,true);b.disabled=false;b.textContent='Send email';});
+  });
+  return b;
+}
+// The follow-up goes by itself once a day; this button sends it now, for tests.
+function canFollowUp(l){
+  return !!(mailInfo&&mailInfo.followUp&&mailInfo.followUp.ready&&l.consent&&l.status==='contacted'&&!l.follow_ups&&l.last_email_at&&new Date(l.created_at)>=new Date(mailInfo.followUp.start));
+}
+function followUpButton(l){
+  if(sampleMode||!canFollowUp(l))return null;
+  var b=el('button',{type:'button',class:'btn',text:'Send follow-up now'});
+  b.addEventListener('click',function(){
+    b.disabled=true;b.textContent='Sending…';
+    mailApi('POST',{action:'send-follow-up',id:l.id}).then(function(j){toast(j.message);return load();},function(err){toast('Not sent: '+err.message,true);b.disabled=false;b.textContent='Send follow-up now';});
+  });
+  return b;
+}
 function mailApi(method,body){
   return fetch('/api/admin/email',{method:method,headers:{'Authorization':'Bearer '+password,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined})
     .then(function(r){return r.json().catch(function(){return {};}).then(function(j){if(!r.ok){var e=new Error(j.error||'Something went wrong');e.status=r.status;throw e;}return j;});});
@@ -462,6 +494,7 @@ function loadMailStatus(){
   var bar=$('mailbar');
   if(sampleMode){bar.hidden=true;return;}
   mailApi('GET').then(function(m){
+    mailInfo=m;if(openId){var ol=find(openId);if(ol)renderDrawer(ol);}
     bar.textContent='';
     var test=el('button',{type:'button',class:'btn',text:'Send test email'});
     test.addEventListener('click',function(){
@@ -473,9 +506,18 @@ function loadMailStatus(){
       el('span',null,['Gmail: ',el('b',{text:m.gmail||'not connected'})]),
       el('span',null,['Gemini: ',el('b',{text:m.gemini?'writes email 1':'not set up (fallback text)'})]),
       el('span',null,['Email 1: ',el('b',{text:m.auto?'sent automatically when consent is ticked':'sent with the button on each lead'})]),
+      el('span',{'data-tip':'Sent once a day by the robot, in the same thread as email 1. Leads you mark replied, meeting, won or lost are skipped. Leads from before '+fmtDate(m.followUp.start,false)+' never get one.'},['Follow-up: ',el('b',{text:m.followUp.ready?plural(m.followUp.days,'day')+' after email 1, once':'no text yet'})]),
       el('span',null,['Sent today: ',el('b',{text:m.sentToday+' of '+m.dailyLimit})])
     ]));
-    if(m.gmail)bar.appendChild(test);
+    if(m.gmail){
+      var robot=el('button',{type:'button',class:'btn',text:'Run robot now'});
+      robot.addEventListener('click',function(){
+        robot.disabled=true;robot.textContent='Running…';
+        mailApi('POST',{action:'run-robot'}).then(function(j){toast(j.message,j.summary&&j.summary.errors.length>0);return load();},function(e){toast('Robot failed: '+e.message,true);})
+          .then(function(){robot.disabled=false;robot.textContent='Run robot now';});
+      });
+      bar.appendChild(test);bar.appendChild(robot);
+    }
     bar.hidden=false;
   }).catch(function(){bar.hidden=true;});
 }
@@ -668,13 +710,13 @@ function renderLeads(){
     var tr=el('tr',null,[
       cell('Rank',[el('span',{class:'rankno',text:l.rankNo?'#'+l.rankNo:'–','data-tip':l.rankNo?null:notRanked(l)})]),
       cell('Priority',[el('span',{class:'prio','data-tip':l.rank.reasons.map(function(r){return r.label+' +'+r.points;}).join(' · ')},[el('b',{text:String(l.rank.priority)}),tierTag(l.rank.tier)])]),
-      cell('Lead',[el('a',{href:'mailto:'+l.email,text:l.email}),el('div',{class:'small muted',text:(a.company||'')+' · '+ago(l.created_at)})]),
+      cell('Lead',[el('span',{text:l.email}),el('div',{class:'small muted',text:(a.company||'')+' · '+ago(l.created_at)})]),
       cell('Pricing check',[siteLink(a.url),facts.length?el('div',{class:'small',text:facts.join(' · ')}):null,a.category?el('div',{class:'small muted',text:a.category}):null]),
-      cell('Status',[statusSelect(l)]),
+      cell('Status',[statusSelect(l),sendEmailButton(l,'btn-sm row-send')]),
       cell('Emails',l.emails&&l.emails.length?[el('div',{class:'small',text:plural(l.emails.length,'email')}),el('div',{class:'small muted',text:'Last '+fmtDate(l.emails[0].sent_at,false)})]:[el('span',{class:'small muted',text:'None yet'})]),
       cell('',[open])
     ]);
-    tr.querySelectorAll('a').forEach(function(x){x.addEventListener('click',function(e){e.stopPropagation();});});
+    tr.querySelectorAll('a,button').forEach(function(x){x.addEventListener('click',function(e){e.stopPropagation();});});
     tr.addEventListener('click',function(){openDrawer(l.id,open);});
     body.appendChild(tr);
   });
@@ -737,16 +779,7 @@ function renderDrawer(l){
   copy.addEventListener('click',function(){
     (navigator.clipboard?navigator.clipboard.writeText(l.email):Promise.reject()).then(function(){toast('Email copied');},function(){toast('Copy failed: select it by hand',true);});
   });
-  var acts=[el('a',{class:'btn'+(l.status==='new'&&l.consent?'':' btn-primary'),href:'mailto:'+l.email,text:'Email them'}),copy];
-  if(l.status==='new'&&l.consent&&!l.last_email_at){
-    var send1=el('button',{type:'button',class:'btn btn-primary',text:sampleMode?'Send email 1 (off with sample data)':'Send email 1'});
-    if(sampleMode)send1.disabled=true;
-    send1.addEventListener('click',function(){
-      send1.disabled=true;send1.textContent='Gemini is writing…';
-      mailApi('POST',{action:'send-email1',id:l.id}).then(function(j){toast(j.message);return load();},function(e){toast('Not sent: '+e.message,true);send1.disabled=false;send1.textContent='Send email 1';});
-    });
-    acts.unshift(send1);
-  }
+  var acts=[sendEmailButton(l),followUpButton(l),copy].filter(Boolean);
   if(/^[a-z0-9.-]+\.[a-z]{2,}(\/[^\s"'<>]*)?$/i.test(String(a.url||'')))acts.push(el('a',{class:'btn',href:'https://'+a.url,target:'_blank',rel:'noopener noreferrer',text:'Open pricing page'}));
   d.appendChild(el('section',{class:'d-sec'},[el('h3',{text:'Next step'}),
     el('div',{class:'d-row'},[el('label',{class:'small muted',for:'dStatus',text:'Status'}),(function(){var s=statusSelect(l,'Status');s.id='dStatus';return s;})()]),
@@ -768,7 +801,7 @@ function renderDrawer(l){
         el('div',{class:'meta'},[el('span',{text:m.direction==='in'?'← From '+l.email:'→ Sent by Tierscope'}),el('span',{text:fmtDate(m.sent_at)})]),
         el('b',{text:m.subject||'(no subject)'}),m.body?el('p',{text:m.body}):null]));
     });
-  }else em.appendChild(el('p',{class:'small muted',text:'No emails yet. Emails sent to and received from this lead will show here once email sending is set up.'}));
+  }else em.appendChild(el('p',{class:'small muted',text:'No emails yet. Email 1 and the follow-up will show here once they are sent.'}));
   d.appendChild(em);
 }
 

@@ -16,8 +16,15 @@ The Tierscope team`,
 };
 
 // The subject is email 1's subject with "Re: " in front, so it lands in the same thread (AGENTS.md).
+// No {company} on purpose: the follow-up never pastes what the visitor typed.
 export const FOLLOW_UP = {
-  body: ``,
+  body: `Hi,
+
+A quick follow-up on your Tierscope pricing report.
+
+If you'd like a pricing strategist to go through it with you, the 60-minute pricing review is still open. Just reply to this email and we'll find a time.
+
+The Tierscope team`,
 };
 
 // true: email 1 goes out by itself when a visitor unlocks a report and ticks the consent box.

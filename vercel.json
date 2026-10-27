@@ -2,6 +2,10 @@
   "cleanUrls": true,
   "functions": {
     "api/leads.js": { "maxDuration": 60 },
-    "api/admin/email.js": { "maxDuration": 60 }
-  }
+    "api/admin/email.js": { "maxDuration": 60 },
+    "api/robot.js": { "maxDuration": 60 }
+  },
+  "crons": [
+    { "path": "/api/robot", "schedule": "0 7 * * *" }
+  ]
 }
