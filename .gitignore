@@ -2,3 +2,5 @@
 .env
 .vercel
 node_modules
+# The demo video is large: keep it out of git (it lives in presentation/ locally)
+presentation/*.mp4

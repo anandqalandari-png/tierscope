@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tierscope · What we built</title>
+<!--
+  FIRST DRAFT for Claude Design: the content is final, the design is not.
+  5 slides, 16:9. Each slide is a <section class="slide">. "Speaker notes" under each slide are for the presenter.
+  The demo video goes in slide 3, at the VIDEO SLOT comment (see claude-design-prompt.md).
+-->
+<style>
+  /* Rough layout only. Claude Design restyles everything. */
+  :root { --green: #0f6e4c; --ink: #121614; --muted: #5b625e; --line: #d9ddda; --paper: #ffffff; --bg: #eef0ee; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .slide { width: min(1280px, 100% - 32px); aspect-ratio: 16 / 9; margin: 32px auto; padding: 44px 56px; background: var(--paper);
+           border: 1px solid var(--line); overflow: hidden; display: flex; flex-direction: column; gap: 16px; }
+  .kicker { font: 600 12px/1 ui-monospace, Menlo, monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--green); margin: 0; }
+  h1 { font-size: 46px; line-height: 1.05; margin: 0; letter-spacing: -.02em; }
+  h2 { font-size: 34px; line-height: 1.1; margin: 0; letter-spacing: -.01em; }
+  h3 { font-size: 17px; margin: 0 0 6px; }
+  p, li { margin: 0; font-size: 15px; }
+  ul, ol { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .lead { font-size: 19px; color: var(--muted); max-width: 900px; }
+  .cols { display: grid; gap: 18px; flex: 1; min-height: 0; }
+  .c2 { grid-template-columns: 1fr 1fr; } .c3 { grid-template-columns: repeat(3, 1fr); }
+  .box { border: 1px solid var(--line); padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .label { font: 600 11px/1.2 ui-monospace, Menlo, monospace; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .quote { font-size: 17px; font-weight: 600; color: var(--green); }
+  .steps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .step { border-top: 3px solid var(--green); padding-top: 8px; }
+  .step b { display: block; font-size: 14px; } .step span { font-size: 13px; color: var(--muted); }
+  .small { font-size: 13px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; } td, th { border-bottom: 1px solid var(--line); padding: 5px 6px; text-align: left; vertical-align: top; }
+  .video-wrap { display: grid; grid-template-columns: 2.1fr 1fr; gap: 20px; flex: 1; min-height: 0; }
+  video { width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; display: block; }
+  .notes { width: min(1280px, 100% - 32px); margin: -20px auto 40px; padding: 12px 16px; background: #fff8e6; border: 1px dashed #e0c98a; font-size: 13px; color: #5a4a1a; }
+  .notes b { color: #3d3210; }
+</style>
+</head>
+<body>
+
+<!-- ===================== SLIDE 1 · WHAT TIERSCOPE IS ===================== -->
+<section class="slide" id="slide-1">
+  <p class="kicker">Tierscope · tierscope-app.vercel.app</p>
+  <h1>Find the revenue your pricing leaves on the table.</h1>
+  <p class="lead">Tierscope is a free pricing check for SaaS teams. Paste your pricing page and get a pricing score out of 100 in under a minute.
+    Enter a work email to unlock the full report: your plans compared with your 20 closest competitors, three recommended changes and your estimated revenue gap per year.</p>
+  <div class="cols c3">
+    <div class="box">
+      <span class="label">The problem</span>
+      <h3>Most SaaS teams have no pricing department</h3>
+      <p>Prices are set once at launch, often copied from a competitor, and rarely revisited. Teams guess, and every month of the wrong price is revenue lost.</p>
+    </div>
+    <div class="box">
+      <span class="label">What we built</span>
+      <h3>A lead magnet, an email engine and a CRM</h3>
+      <ul>
+        <li>A website that scores any pricing page for free</li>
+        <li>A full report, unlocked with a work email</li>
+        <li>Email 1 written by AI, plus one follow-up the next day</li>
+        <li>A private CRM that ranks every lead</li>
+      </ul>
+    </div>
+    <div class="box">
+      <span class="label">What we want from a lead</span>
+      <h3>A booked pricing review</h3>
+      <p>A paid 60-minute session with a pricing strategist, who turns the report into a concrete plan.</p>
+      <p class="small">Our best lead: the founder of a B2B SaaS with three paid plans who scores under 60.</p>
+    </div>
+  </div>
+</section>
+<div class="notes"><b>Speaker notes:</b> One sentence on the product, one on the problem, one on the business goal. The free check is the hook; the pricing review is what we sell.</div>
+
+<!-- ===================== SLIDE 2 · PERSONAS ===================== -->
+<section class="slide" id="slide-2">
+  <p class="kicker">Who it is for</p>
+  <h2>Three people, one missing pricing expert</h2>
+  <div class="cols c3">
+    <div class="box">
+      <span class="label">Persona 1 · The founder</span>
+      <h3>Clara, co-founder &amp; CEO</h3>
+      <p class="small">B2B SaaS, 25 people, three paid plans, raising a Series A in six months.</p>
+      <p class="quote">"Should we raise prices before our next round?"</p>
+      <p><b>Pain:</b> no one owns pricing; she fears churn if prices go up, and investors keep asking about revenue per customer.</p>
+      <p><b>How Tierscope helps:</b> a score and a revenue gap per year give her a number to act on; the report shows where each plan sits against 20 competitors and ranks three changes by revenue impact.</p>
+      <p><b>Next step:</b> books the pricing review. She is our ideal lead.</p>
+    </div>
+    <div class="box">
+      <span class="label">Persona 2 · The product manager</span>
+      <h3>Hugo, product manager</h3>
+      <p class="small">Mid-size SaaS, shipping a new feature (for example SSO or an audit log) next quarter.</p>
+      <p class="quote">"Which plan should this feature go in?"</p>
+      <p><b>Pain:</b> packaging decided by gut feeling; features given away in a low plan that competitors charge for.</p>
+      <p><b>How Tierscope helps:</b> the "Feature gaps" part of the report shows what he gives away that others charge for, and which plan competitors put each feature in.</p>
+      <p><b>Next step:</b> shares the report with his team, then brings it to a review.</p>
+    </div>
+    <div class="box">
+      <span class="label">Persona 3 · The sales lead</span>
+      <h3>Sofia, head of sales</h3>
+      <p class="small">B2B SaaS sold to mid-market companies, many deals lost on price.</p>
+      <p class="quote">"Why are you more expensive?"</p>
+      <p><b>Pain:</b> no data to answer prospects, so the team discounts to close.</p>
+      <p><b>How Tierscope helps:</b> the "Price position" part shows each plan against the market middle and the cheapest rival; "Discounts &amp; trials" shows how their offers compare with the norm.</p>
+      <p><b>Next step:</b> uses the report as talking points, and asks for a review to fix the plans behind the objection.</p>
+    </div>
+  </div>
+  <p class="small">Personas are illustrative. A lead we ignore: someone trying the demo links (linear.app, hubspot.com) with a personal email.</p>
+</section>
+<div class="notes"><b>Speaker notes:</b> Each persona has one question Tierscope answers in under a minute. Clara is who we rank highest in the CRM.</div>
+
+<!-- ===================== SLIDE 3 · DEMO VIDEO ===================== -->
+<section class="slide" id="slide-3">
+  <p class="kicker">Demo</p>
+  <h2>From pricing page to inbox to CRM, in under 90 seconds</h2>
+  <div class="video-wrap">
+    <!-- VIDEO SLOT: tierscope-demo.mp4 (1920×1080, 1 min 25 s, no sound). Keep the controls: it must only play when clicked. -->
+    <video src="tierscope-demo.mp4" poster="tierscope-demo-poster.jpg" controls preload="metadata" playsinline></video>
+    <!-- /VIDEO SLOT -->
+    <div class="box">
+      <span class="label">Chapters</span>
+      <table>
+        <tr><td>0:03</td><td>A founder pastes their pricing page</td></tr>
+        <tr><td>0:12</td><td>Tierscope finds 20 competitors and prints a score</td></tr>
+        <tr><td>0:20</td><td>A work email and the consent box unlock the report</td></tr>
+        <tr><td>0:27</td><td>A one-time code confirms the address</td></tr>
+        <tr><td>0:31</td><td>Full report: price position, three changes, revenue gap</td></tr>
+        <tr><td>0:43</td><td>Email 1 arrives, written by Gemini from their answers</td></tr>
+        <tr><td>0:52</td><td>The next day, one follow-up in the same thread</td></tr>
+        <tr><td>0:57</td><td>The CRM: every lead ranked, with a Send email button</td></tr>
+      </table>
+      <p class="small">Recorded on the live site. The email shown is the real email 1 sent during the recording; the CRM part uses its "Sample data" mode (fake leads).</p>
+    </div>
+  </div>
+</section>
+<div class="notes"><b>Speaker notes:</b> Click play. Pause at 0:31 on the report, then at 0:43 on the email: it went out by itself, seconds after the visitor unlocked the report.</div>
+
+<!-- ===================== SLIDE 4 · HOW IT WORKS ===================== -->
+<section class="slide" id="slide-4">
+  <p class="kicker">How it works</p>
+  <h2>One visit, two emails, zero manual work</h2>
+  <div class="steps">
+    <div class="step"><b>1 · Paste</b><span>The visitor pastes their pricing page URL.</span></div>
+    <div class="step"><b>2 · Score</b><span>A free pricing score out of 100, printed like a receipt.</span></div>
+    <div class="step"><b>3 · Unlock</b><span>Work email, consent box, one-time code.</span></div>
+    <div class="step"><b>4 · Report</b><span>20 competitors, three changes, the revenue gap.</span></div>
+    <div class="step"><b>5 · Email 1</b><span>Seconds later, written by Gemini, sent from our Gmail.</span></div>
+    <div class="step"><b>6 · Follow-up</b><span>One email the next day, in the same thread.</span></div>
+  </div>
+  <div class="cols c3">
+    <div class="box">
+      <span class="label">Email 1, written by AI</span>
+      <p>Gemini writes a short, personal email from the visitor's answers: their company, score, revenue gap and category. It offers one next step: reply to book a 60-minute pricing review.</p>
+      <p>We tested the prompt on three leads (good, vague and a trap with fake instructions) over three versions. If Gemini is busy, a fixed text is sent instead.</p>
+    </div>
+    <div class="box">
+      <span class="label">Rules we chose</span>
+      <ul>
+        <li>Emails only to people who tick the consent box</li>
+        <li>Every unlock sends a new email 1, and each email 1 gets its own follow-up</li>
+        <li>One follow-up only, sent by a daily robot at 9:00 (Paris)</li>
+        <li>A lead marked "lost" (for example after "stop") is never emailed again</li>
+      </ul>
+    </div>
+    <div class="box">
+      <span class="label">Safe by design</span>
+      <ul>
+        <li>Limits: 5 emails a day per address, 30 an hour, 100 a day</li>
+        <li>What visitors type is cleaned before it reaches an email: no injected text, links or discounts</li>
+        <li>Keys stay on the server; the browser never talks to the database or Gmail</li>
+        <li>Runs in the cloud: no laptop needed</li>
+      </ul>
+    </div>
+  </div>
+  <p class="small">Built with: a website and server routes on Vercel · Supabase database · Gmail (sending through an app password) · Google Gemini · a daily Vercel Cron job.</p>
+</section>
+<div class="notes"><b>Speaker notes:</b> The visitor gets value first (the score), then gives an email for more. Everything after that is automatic, and protected against abuse of our Gmail.</div>
+
+<!-- ===================== SLIDE 5 · THE CRM ===================== -->
+<section class="slide" id="slide-5">
+  <p class="kicker">The CRM · /admin</p>
+  <h2>Every lead, ranked, with the next step one click away</h2>
+  <div class="cols c3">
+    <div class="box">
+      <span class="label">Overview</span>
+      <p>A private page behind a password, checked on the server.</p>
+      <ul>
+        <li>Leads, hot leads, consent rate, average score</li>
+        <li>Open opportunity: the revenue gaps of all open leads added up</li>
+        <li>Reply rate, meetings, won</li>
+        <li>Funnel (all leads → contacted → replied → meeting → won) and new leads per day</li>
+      </ul>
+    </div>
+    <div class="box">
+      <span class="label">Ranking from 0 to 100</span>
+      <table>
+        <tr><td>Low pricing score (more room to help)</td><td>up to 30</td></tr>
+        <tr><td>Big revenue gap</td><td>up to 25</td></tr>
+        <tr><td>Work email</td><td>20</td></tr>
+        <tr><td>Agreed to emails</td><td>15</td></tr>
+        <tr><td>Arrived recently</td><td>up to 10</td></tr>
+      </table>
+      <p><b>Hot</b> 70+ · <b>Warm</b> 45–69 · <b>Cold</b> under 45 · <b>Ignore</b>: tried a demo link. Each lead shows the reasons behind its score.</p>
+    </div>
+    <div class="box">
+      <span class="label">Working the leads</span>
+      <ul>
+        <li>Status: new → contacted → followed up → replied → meeting → won or lost</li>
+        <li><b>Send email</b> next to each status: Gmail sends email 1 at once, no mail app</li>
+        <li><b>Run robot now</b> and <b>Send follow-up now</b> for tests</li>
+        <li>Notes, filters (priority, status, category, consent), CSV export</li>
+        <li>Every email sent to a lead is listed on that lead</li>
+        <li>A "Sample data" switch with fake leads, for demos</li>
+      </ul>
+    </div>
+  </div>
+  <p class="small">Daily routine: open Leads sorted by priority, answer the hot ones, mark replies and meetings, mark "lost" anyone who asks to stop.</p>
+</section>
+<div class="notes"><b>Speaker notes:</b> The CRM tells the team who to call first and why. Close on the goal: more booked pricing reviews with less manual work.</div>
+
+</body>
+</html>

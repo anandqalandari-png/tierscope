@@ -467,8 +467,8 @@ function sendEmailButton(l,cls){
   if(!l.consent)return el('span',{class:'row-noconsent','data-tip':'This lead did not tick the box to hear from us, so we cannot email them',text:'No consent'});
   if(l.status==='lost')return el('span',{class:'row-noconsent','data-tip':'Lost leads (for example they asked us to stop) get no more emails',text:'No more emails'});
   var label=l.last_email_at?'Send email again':'Send email';
-  var b=el('button',{type:'button',class:'btn '+(l.last_email_at?'':'btn-primary ')+(cls||''),text:sampleMode?label+' (off with sample data)':label});
-  if(sampleMode)b.disabled=true;
+  var b=el('button',{type:'button',class:'btn '+(l.last_email_at?'':'btn-primary ')+(cls||''),text:label});
+  if(sampleMode){b.disabled=true;b.title='Off with sample data: these leads are fake';}
   b.addEventListener('click',function(e){
     e.stopPropagation();b.disabled=true;b.textContent='Sending…';
     mailApi('POST',{action:'send-email1',id:l.id}).then(function(j){toast(j.message);return load();},function(err){toast('Not sent: '+err.message,true);b.disabled=false;b.textContent=label;});
